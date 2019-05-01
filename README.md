@@ -1,1 +1,1 @@
-# chessly.github.io
+# CheSSly
