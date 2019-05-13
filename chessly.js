@@ -189,11 +189,10 @@ function game_pieceSVG({
         }
         constructor() {
           super();
-          //this.setAttribute(___ELEMENT_IS___, piece_is);
+          this.setAttribute(___ELEMENT_IS___, piece_is);
         }
         setIMGsrc() {
           let parameters = parametersObject(this, {}, this.constructor.observedAttributes);
-          console.warn(21, parameters);
           this.src = game_pieceSVG(parameters);
         }
         show_piece_moves(from_square) {
