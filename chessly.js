@@ -698,6 +698,7 @@ customElements.define(
       });
       //once the pieces are on the board, calc underlying levels
       this.levelSquares.levelHTML();
+      this.showmoves();
     }
     game(nr) {
       this.fen = games[nr].fen;
