@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chessly</title>
+    <script defer src="chessly.js"></script>
+    <style>
+        body {
+            overflow: hidden;
+            /* xdisplay: grid;
+            grid-template-columns: 1fr 4fr 1fr;
+            grid-template-areas: "left main right"; */
+            /* --squareblack: red; */
+        }
+
+
+        body>img{
+            position:absolute;
+            top:0;
+            left:0;
+            z-index:3;
+            visibility: hidden;
+        }
+
+        #Chess {
+            grid-area: main;
+        }
+
+        [id*=Game] {
+            grid-area: right;
+            float: right;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <img is=white-rook style=width:45vw>
+    <img is=black-rook style=width:45vw>
+
+    <img is=white-pawn style=width:45vw>
+    <img is=black-pawn style=width:45vw>
+    <img is=white-king style=width:45vw>
+    <img is=black-king style=width:45vw>
+    <img is=white-knight style=width:45vw>
+    <img is=black-knight style=width:45vw>
+    <img is=black-bishop style=width:45vw>
+    <img is=white-bishop style=width:45vw>
+    <img is=black-queen style=width:45vw>
+    <img is=white-queen style=width:45vw>
+    <hr> -->
+    <game-board id=Chess fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR squarewhite=whitesmoke></game-board>
+    <!-- <br>
+        <game-board id=Game1 fen=8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3> </game-board> <hr>
+            <game-board id=Game2> <img is=white-king at=h2>
+                <img is=white-queen at=d5>
+                <img is=white-rook at=h7>
+                <img is=white-knight at=g5>
+                <img is=white-pawn at=a3>
+                <img is=white-pawn at=b3>
+                <img is=white-pawn at=g3>
+                <img is=white-pawn at=h3>
+
+                <img is=black-king at=h6>
+                <img is=black-queen at=f6>
+                <img is=black-rook at=e1>
+                <img is=black-knight at=f2>
+                <img is=black-pawn at=d4>
+                <img is=black-pawn at=f3>
+            </game-board> -->
+</body>
+
+</html>
+Published: 2019-05-13 13:47 
