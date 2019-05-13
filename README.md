@@ -11,4 +11,4 @@ If you want to implement a Chess Game see: https://github.com/sandy98/chess-boar
 ### Resources
 
 * //https://siderite.blogspot.com/2011/09/portable-game-notation-and-parsing-it.html
-Published: 2019-05-13 13:47 
+Published: 2019-05-13 14:10 
