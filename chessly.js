@@ -5,20 +5,68 @@ let chunk = (// chunck a string in equal sizes
   size, // chunk size
   r = [] // result: initialized on first call, set in recursion call
 ) => (r.push(arr.splice(0, size)), r.concat(arr.length ? chunk(arr, size) : [])); // [] is concatted last!
+let getBoundingClientRect = x => x.getBoundingClientRect();
 
-let dragenter_event = event => {//attached on both empty square and piece in square
-  let board = event.target.board;
-  let square = event.target.at;// target is img or square
-  if (!board) console.warn('drag_enter not square', event.target);
-  let piece_at_square = board && board.at(square); //piece OR false
-  if (board.draggingPiece.at != square) {
-    if (board.attackedPiece) { }// previous attacked piece
-    board.attackedPiece = false;
-    if (piece_at_square) board.attackedPiece = piece_at_square;
-    board.draggingPiece.at = square;
-    event.target.board.showmoves(square);
+//add_dragstart_event is in piece constructor so it can used scoped declaration
+
+let start_drag = event => {
+  let { board, at: square } = piece = event.target;
+  board.draggingFromsquare = board.layerDestinations.squares(piece.at);
+  board.draggingFromsquare.setAttribute("dragstart", piece.is);
+  piece.show_moves_on_Moves_and_Destinations_layers(square);
+}
+let add_dragstart_event = element => element.addEventListener("dragstart", event => {
+  board.draggingPiece = event.target;
+  start_drag(event);
+});
+let add_mouseover_event = element => {
+  element.addEventListener("mouseover", event => {
+    let { at: square } = piece = event.target;
+    if (!piece.board.draggingPiece) piece.show_moves_on_Moves_and_Destinations_layers(square);
+  });
+  element.addEventListener("touchmove", event => {
+    if (event.target.board) {
+      let { board } = piece = event.target;
+      let { pageX, pageY } = event.targetTouches[0];
+      let square = board.square_from_position(pageX, pageY);
+      if (!board.draggingPiece) start_drag(event);
+      //if dragged piece to ANOTHER square
+      if (!board.draggingPiece || board.draggingPiece.at != square) {
+        board.draggingPiece = piece;
+        event.target.at = square;
+        board.showmoves(square);
+      }
+    }
+  }, { passive: true });
+  element.addEventListener("touchend", end_drag, { passive: true });
+}
+let add_dragenter_event = element => element.addEventListener("dragenter", event => {
+  let { board, at: square } = piece = event.target;
+  if (square && board.draggingPiece) { //if inside board
+    if (square !== board.draggingPiece.at) board.showmoves(board.draggingPiece.at = square);
+    //console.log('show dragmoves', piece.is, square)
   }
-};
+});
+let add_dragend_event = element => element.addEventListener("dragend", end_drag);
+let add_mouseout_event = element => element.addEventListener("mouseout", clear_drag);
+
+let clear_drag = event => {
+  let { board } = piece = event.target;
+  if (!board.draggingPiece) {
+    board.layerMoves.clear_squares_with_from_attributes();
+    board.layerDestinations.clear_squares_with_from_attributes();
+  }
+}
+let end_drag = event => {
+  let { board } = event.target;
+  let piece = board.at(event.target.at);    // pieces at square
+  board.draggingFromsquare.removeAttribute("dragstart");
+  board.draggingFromsquare = false;
+  board.draggingPiece = false;
+  if (piece.length > 1) piece[0].remove();  // remove captured piece
+  event.target.board.showmoves();           // clear moves
+  clear_drag(event);                        // clear destinations
+}
 
 const ___WHITE___ = "white";
 const ___BLACK___ = "black"
@@ -28,16 +76,20 @@ const ___ATTACKED_BY___ = "attackers";
 const ___DEFENDED_BY___ = "defenders";
 const ___ID_SQUARES___ = "squares";
 const ___PROTECTED_BY___ = "protectors";
-const ___PROTECTED_BY_WHITE___ = "protectors_" + ___WHITE___;
-const ___PROTECTED_BY_BLACK___ = "protectors_" + ___BLACK___;
+const ___PROTECTED_BY_WHITE___ = ___PROTECTED_BY___ + ___WHITE___;
+const ___PROTECTED_BY_BLACK___ = ___PROTECTED_BY___ + ___BLACK___;
 const ___SQUARE_RELATIONS___ = "relations";
 const ___ATTR_PIECE___ = "piece";
 const ___ATTR_FROM___ = "from";
+const ___ATTR_FEN___ = "fen";
 const ___EMPTYSQUARE___ = ".";
 const ___ELEMENT_IS___ = "is";
 
 const ___AT___ = "at";
 const ___OUTLINE___ = "outline";
+
+const ___ATTR_SHOW_DESTINATIONS___ = "destination";
+const ___ATTR_SHOW_MOVES___ = "moves";
 
 let games = [
   {
@@ -195,28 +247,31 @@ function game_pieceSVG({
           let parameters = parametersObject(this, {}, this.constructor.observedAttributes);
           this.src = game_pieceSVG(parameters);
         }
-        show_piece_moves(from_square) {
+        show_piece_moves(attack_from_square, layers = [this.board.layerDestinations]) {
+          if (this.at == 'D4') console.log(23, this.is, this.at, attack_from_square, this.board.draggingPiece);
           this.moves().piece_destinations
             .filter(to_square => to_square.length == 2 || to_square[2] == "X")// empty or attacking square
             .map(to_square => {
-              let square = to_square[0] + to_square[1];
-              let { piece, piece_is, square_element } = this.board.squareData(square);
-              if (from_square == this.at) {
+              if (attack_from_square == this.at) {
+                let { piece, piece_is, square_element } = this.board.squareData(squarenameUpperCase(to_square));
                 if (to_square[2] == "X") piece.attackFrom(this.at); // set image outline
                 //else empty square piece can move to
-                this.board.record_fromto_move(this.at, square);
+                layers.map(layer => layer.from_to(attack_from_square, to_square));
               }
             })
         }
-        connectedCallback() {
+        show_moves_on_Moves_and_Destinations_layers(square) {
+          this.show_piece_moves(square, [this.board.layerMoves]);
+          this.show_piece_moves(square, [this.board.layerDestinations]);
+        }
+
+        connectedCallback() {// piece IMG
           this.setIMGsrc();
           this.board = this.getRootNode().host;
           this.setAttribute("draggable", "draggable");
-          this.addEventListener("mouseover", event => {
-            this.board.levelMoves.clear_from_moves();
-            this.show_piece_moves(this.at);
-          });
-          this.addEventListener("dragstart", event => this.board.draggingPiece = this);
+          add_dragstart_event(this);
+          add_mouseover_event(this);
+          add_mouseout_event(this);
         }
         attributeChangedCallback(name, oldValue, newValue) {
           if (name == ___AT___) this._at_square = squarenameUpperCase(newValue);
@@ -242,7 +297,7 @@ function game_pieceSVG({
           return this.getAttribute(___ELEMENT_IS___);
         }
         to(square) {
-          let from = this.board.square(this.at).rect;
+          let from = this.board.square(this.at).rect;//destructure!
           let to = this.board.square(square).rect;
           this.animate(
             [
@@ -442,8 +497,8 @@ class SquareElement extends HTMLElement {
   set_square_relations() {
     let { piece, piece_is, square_element } = this.board.squareData(this.square);
 
-    let setRelations = attrName => {
-      let relations = [...this._relations[attrName]]; // attacked_By , set_defended_By
+    let setElementRelations = (square_element, attrName) => {
+      let relations = [...square_element._relations[attrName]]; // attacked_By , set_defended_By
       let set_square_and_piece = el => {              // el is img OR square-white/square-black
         if (relations.length) {
           el.setAttribute(attrName, relations.join(","));
@@ -453,15 +508,21 @@ class SquareElement extends HTMLElement {
           el.removeAttribute(attrName + "_count");
         }
       };
-      set_square_and_piece(this); // square is
+      set_square_and_piece(square_element); // square is
       if (piece) set_square_and_piece(piece); // square is
     };
 
-    setRelations(___ATTACKED_BY___);
-    setRelations(___DEFENDED_BY___);
-    setRelations(___PROTECTED_BY_WHITE___);
-    setRelations(___PROTECTED_BY_BLACK___);
-    square_element.setAttribute(___ATTR_PIECE___, piece_is); // piece_is = 'none'
+    let setSquareRelations = square_element => {
+      setElementRelations(square_element, ___ATTACKED_BY___);
+      setElementRelations(square_element, ___DEFENDED_BY___);
+      setElementRelations(square_element, ___PROTECTED_BY_WHITE___);
+      setElementRelations(square_element, ___PROTECTED_BY_BLACK___);
+      square_element.setAttribute(___ATTR_PIECE___, piece_is); // piece_is = 'none'
+    }
+
+    setSquareRelations(this);
+    //setSquareRelations(this.board.layerMoves.squares(this.square));
+
   }
   add_relationData(square) {
     //this._relations[___SQUARE_RELATIONS___].add(square);
@@ -471,13 +532,16 @@ class SquareElement extends HTMLElement {
   }
   set_protected_By(square, piece_is) {
     let piece_color = piece_is.split('-')[0];
-    this._relations[___PROTECTED_BY___ + '_' + piece_color].add(square);
+    this._relations[___PROTECTED_BY___ + piece_color].add(square);
   }
   set set_defended_By(piece) {
     this._relations[___DEFENDED_BY___].add(piece);
   }
+  rect() {
+    return getBoundingClientRect(this);
+  }
   get piece() {
-    let rect = this.getBoundingClientRect();
+    let rect = this.rect();
     let x = rect.left + rect.width / 2;
     let y = rect.top + rect.height / 2;
     return this.board.at(this._square);
@@ -497,28 +561,33 @@ let cssgrid = gap =>
 let game_css =
   `<style>:root {display:block;}` +
   `*{box-sizing:border-box;}` +
-  `#board{position:relative;border:10px solid black;width:100%;max-width:90vh;margin:0 auto;}` +
+  `#board{position:relative;border:var(--border, 1vh solid black);width:100%;max-width:90vh;margin:0 auto;}` +
   `#board:after{content:"";display:block;padding-bottom:100%}` +// square sized board
   //only Chrome does conic-gradient to create a checkboard layout:
   //+ `#board{--sqblack:var(--,#b58863);--sqwhite:var(--${___SQUAREWHITE___},#00d9b5);--sqempty:green;}`
   //+ `#board{background:conic-gradient(var(--sqblack) 0.25turn, var(--sqwhite) 0.25turn 0.5turn, var(--sqblack) 0.5turn 0.75turn, var(--sqwhite) 0.75turn) top left/25% 25% repeat}`
-  `#board square-white{background-color:var(--${___SQUAREBLACK___},#f0e9c5)}` +
-  `#board square-black{background-color:var(--${___SQUAREBLACK___},#b58863)}` +
+  `square-white{--bgcolor:var(--${___SQUAREWHITE___},#f0e9c5)}` +
+  `square-black{--bgcolor:var(--${___SQUAREBLACK___},#b58863)}` +
+  `#squares square-white,#squares square-black{background-color:var(--bgcolor)}` +
+
   //create grid-area for every square name (A1 to H8)
   `${all_board_squares.map(square => `[at=${square}]{grid-area:${square}}`).join("")}` +
 
-  `board-level{${cssgrid(0)}}` +
+  `board-layer{${cssgrid(0)}}` +
   `square-white:not([at]),square-black:not([at]){border:1px solid red}` + // extra warning for squares without a piece
-  `#squares >*[piece="none"]:before{z-index:1;display:block;content:attr(at);position:relative;text-align:center;top:40%;color:var(--squarecolor,black);font-family:arial}` + //cell File/Rank text
+  // `#squares >*[piece="none"]:before{font-size:var(--squarefontsize,0px);z-index:1;display:block;content:attr(at);position:relative;text-align:center;top:40%;color:var(--squarecolor,black);font-family:arial;cursor:not-allowed}` + //cell File/Rank text
+  // `#squares >*{border:1px solid red}` + //cell File/Rank text
+  // `#squares >*{position:relative;border:1px solid red}` + //cell File/Rank text
 
-  `#moves >*[from]{width:90%;height:90%;margin:5%;border:6px dashed darkgreen}` +
+  `#destinations >*[from]{border:.5vh solid lightgreen}` +//destinations
+  `#destinations >*[dragstart]{border:.5vh dashed var(--bgcolor);background:lightgreen}` +//(dragstart) from location
+  //possible moves for this piece
+  `#moves >*[from]{width:90%;height:90%;margin:5%;border:.5vh dashed green}` +
   //  `#moves >*:not([piece="none"]){border-color:red}` +
 
   `.rotated,.rotated img{transform:rotate(180deg)}` +
   `img:not([at]){background:red;}` +//debug
-  `img[at]{width:100%;z-index:11}` +
-
-  `#board{--dropsize:var(--chessly_dropshadow_size,6px)}` +
+  `img[at]{width:100%;z-index:11;cursor:grab}` +
   `</style>` +
 
   `<style id=attack_and_defend_dropshadow>` +
@@ -529,7 +598,6 @@ let game_css =
   /* */ `#pieces img[defenders]:not([attackers]){filter:var(--swd)}` +
 
   /* Attacked piece without defenders */ `#pieces img[attackers]:not([defenders]){` +
-  `--len:4px;--col:red;` +
   `filter:drop-shadow(var(--dropsize) 0px 1px red) drop-shadow(calc(-1*var(--dropsize)) 0px 1px red);` +
   `</style>` +
 
@@ -538,7 +606,7 @@ let game_css =
   /* */ `#squares [defenders]:not([attackers]):after{z-index:1;content:" " attr(defenders_count);text-align:left;display:block;position:relative;width:100%;height:100%}` +
   `</style>`;
 
-customElements.define("board-level", class extends HTMLElement {
+customElements.define("board-layer", class extends HTMLElement {
   static get observedAttributes() {
     return [];
   }
@@ -548,25 +616,28 @@ customElements.define("board-level", class extends HTMLElement {
   }
   connectedCallback() {
   }
-  clear_level() {
+  clear_layer() {
     this.innerHTML = "";
-    this.clear_from_moves();
+    this.clear_squares_with_from_attributes();
   }
   from_to(from_square, to_square) {
-    this._squares_marked_from.add(to_square);
-    this.squares(to_square).setAttribute(___ATTR_FROM___, from_square);
+    let square = squarenameUpperCase(to_square);
+    this._squares_marked_from.add(square);
+    this.squares(square).setAttribute(___ATTR_FROM___, from_square);
   }
-  clear_from_moves() {
+  clear_squares_with_from_attributes() {
     this._squares_marked_from.forEach(square => this.squares(square).removeAttribute(___ATTR_FROM___));
     this._squares_marked_from.clear();
   }
-  levelHTML(filterFunc = (element, squareData) => {
-    element.setAttribute(___ATTR_PIECE___, squareData.piece_is);
-    element.addEventListener("dragenter", dragenter_event);
-    return true
-  }) {
+  layerHTML(
+    //default function for squares layer; adds attribute and listner
+    filterFunc = (element, squareData) => {
+      element.setAttribute(___ATTR_PIECE___, squareData.piece_is);
+      return true
+    }
+  ) {
     let board = this.getRootNode().host;
-    this.clear_level();
+    this.clear_layer();
     let squares = all_board_squares.map(square => {
       let squareData = board.squareData(square);
       let { idxFile, idxRank } = squareData;
@@ -580,6 +651,12 @@ customElements.define("board-level", class extends HTMLElement {
     });
     this.append(...squares);
     return this; //chaining
+  }
+  reset_squares() {
+    this.squares().map(square_element => square_element.reset_square());
+  }
+  set_square_relations() {
+    this.squares().map(square_element => square_element.set_square_relations());
   }
   squares(selector = "*") {
     // get one or more pieces from the board
@@ -598,11 +675,11 @@ customElements.define("board-level", class extends HTMLElement {
         ? elements[0]
         : false;
   }
-  add_board_level_piece(piece_is, square, append = true) {
+  add_board_layer_piece(piece_is, square, append = true) {
     if (square && append) {
       let piece = document.createElement("img", { is: piece_is });
-      //if (this.id == ___ID_SQUARES___)
-      piece.addEventListener("dragenter", dragenter_event);
+      //piece.decoding = "async";//? any use?
+      //add_dragenter_event(piece);
       piece.setAttribute(___AT___, (square = squarenameUpperCase(square)));
       return this.appendChild(piece);
     } else {
@@ -611,10 +688,10 @@ customElements.define("board-level", class extends HTMLElement {
   }
 });
 customElements.define(
-  "game-board",
+  "chessly-board",
   class extends HTMLElement {
     static get observedAttributes() {
-      return ["fen", ___SQUAREWHITE___, ___SQUAREBLACK___];
+      return [___ATTR_FEN___, ___SQUAREWHITE___, ___SQUAREBLACK___];
     }
     constructor() {
       super();
@@ -623,47 +700,50 @@ customElements.define(
       this.innerHTML = ""; //clear lightDOM
       this.shadowRoot.innerHTML = game_css + `<div id=board></div>`;
       this.board = this.shadowRoot.querySelector("#board");
-      this.levelSquares = this.addlevel(___ID_SQUARES___); //default 64 empty squares
-      this.levelMoves = this.addlevel("moves"); //default 64 empty squares
-      this.level_dragpiece = this.addlevel("dragpiece");
-      this.levelPieces = this.addlevel("pieces");
-      this.levelPieces.innerHTML = initialpieces_lightDOM;
+      this.layerSquares = this.addlayer(___ID_SQUARES___); //default 64 empty squares
+      this.layerMoves = this.addlayer("moves"); //default 64 empty squares
+      this.layer_dragpiece = this.addlayer("dragpiece");
+      this.layerPieces = this.addlayer("pieces");
+      this.layerPieces.innerHTML = initialpieces_lightDOM;
+      //destinations above all other layers, so board capture dragenter event
+      this.layerDestinations = this.addlayer("destinations"); //default 64 empty squares
     }
     connectedCallback() {
-      //once the pieces are on the board, calc underlying levels
-      this.levelSquares.levelHTML(); // shows cell numbers for empty fields
-      this.levelMoves.levelHTML(() => true); // shows cell numbers for empty fields
-
-      this.board.addEventListener("dragend", event => {
-        this.board.draggingPiece = false;
-        let piece = this.at(event.target.at);
-        if (piece.length > 1) piece[0].remove();
-        event.target.board.showmoves();
-      });
+      //once the pieces are on the board, calc underlying layers
+      this.layerSquares.layerHTML(); // shows cell numbers for empty fields
+      this.layerMoves.layerHTML(() => true); // shows cell numbers for empty fields
+      this.layerDestinations.layerHTML(() => true); // shows destinations
+      add_dragenter_event(this.board);
+      //[...this.layerDestinations.children].forEach(element => add_dragenter_event(element));
+      add_dragend_event(this.board);
+      let rect = getBoundingClientRect(this.board);
+      let boardwidth = rect.width;
+      this.board.style.setProperty('--dropsize', boardwidth / 100 + 'px');
+      if (boardwidth > 300) this.board.style.setProperty('--squarefontsize', boardwidth / 25 + 'px');
     }
-    addlevel(id) {
-      let level = document.createElement("board-level");
-      level.id = id;//used by CSS
-      return this.board.appendChild(level);
+    addlayer(id) {
+      let layer = document.createElement("board-layer");
+      layer.id = id;//used by CSS
+      return this.board.appendChild(layer);
     }
-    add_board_piece(piece_is, square, level = this.levelPieces) {
-      if (all_board_squares.includes(square)) level.add_board_level_piece(piece_is, square);
+    add_board_piece(piece_is, square, layer = this.layerPieces) {
+      if (all_board_squares.includes(square)) layer.add_board_layer_piece(piece_is, square);
     }
     at(square) {
-      return this.levelPieces.squares(square);
+      return this.layerPieces.squares(square);
     }
+
     showmoves(from_square) {
-      let board_squares = this.levelSquares.squares();//get all 64 board squares
-      board_squares.map(square_element => square_element.reset_square());// reset level
-      this.levelMoves.clear_from_moves();
-      [...this.levelPieces.children].map(piece => {
-        piece.show_piece_moves(from_square);
+      console.log(20, 'showmoves', from_square);
+      this.layerSquares.reset_squares();
+      this.layerMoves.clear_squares_with_from_attributes();
+      [...this.layerPieces.children].map(piece => {
+        piece.show_piece_moves(from_square, [this.layerMoves]);
       });
-      //loop all squares updating this.board.levelSquares with correct attribute data
-      board_squares.map(square_element => square_element.set_square_relations());
+      this.layerSquares.set_square_relations();//loop all squares updating this.board.layerSquares with correct attribute data
     }
     get fen() {
-      //todo move fen to level for multiple pieces level
+      //todo move fen to layer for multiple pieces layer
       let fen = "",
         empty = 0;
       let addempties = _ => (
@@ -673,7 +753,7 @@ customElements.define(
         (empty = 0)       // always reset empty count
       );
       let add = char => (fen += addempties() + char); // add new FEN character,including counting empties
-      this.levelSquares.children.map((sq, idx) => {   // loop all squares
+      this.layerSquares.children.map((sq, idx) => {   // loop all squares
         if (idx && !(idx % squarecount)) add("/");    // if new rank(row) add a /
         if (sq.piece) add(sq.piece.fen);              // if piece in this square add fen character
         else empty++;                                 // else count empties
@@ -682,7 +762,7 @@ customElements.define(
       return fen;
     }
     set fen(fen) {
-      this.levelPieces.clear_level();
+      this.layerPieces.clear_layer();
       fen.split("/").map((rank, idx) => {
         rank.split``.map(
           fen => fen == Number(fen)         // number
@@ -696,18 +776,13 @@ customElements.define(
           if (piece_is) this.add_board_piece(piece_is, square);
         });
       });
-      //once the pieces are on the board, calc underlying levels
-      this.levelSquares.levelHTML();
+      //once the pieces are on the board, calc underlying layers
+      this.layerSquares.layerHTML();
       this.showmoves();
     }
     game(nr) {
       this.fen = games[nr].fen;
     }
-    record_fromto_move(from_square, to_square) {
-      this.levelSquares.from_to(from_square, to_square);
-      this.levelMoves.from_to(from_square, to_square);
-    }
-
     move(sq1, sq2) {
       let piece = this.at(sq1);
       if (piece) piece.to(sq2);
@@ -715,8 +790,30 @@ customElements.define(
     rotate() {
       this.board.classList.toggle("rotated");
     }
+    files() {
+      return files;
+    }
+    ranks() {
+      return ranksAscending;
+    }
+    rect() {
+      return getBoundingClientRect(this);
+    }
+    square_from_position(x, y) {// pageX, pageY screen coordinates
+      let boardrect = this.rect();//todo memoize
+      let squarewidth = boardrect.width / squarecount;
+      let getindex = position => {
+        let idx = 1;
+        while (position > idx * squarewidth) idx++;
+        return idx - 1;
+      }
+      let file = files[getindex(x - boardrect.left)]; // A to H
+      let rank = ranks[getindex(y - boardrect.top)];  // 8 to 1
+      if (file && rank) return file + rank;
+      else return false;
+    }
     attributeChangedCallback(name, oldValue, newValue) {
-      if (name == "fen") this.fen = newValue;
+      if (name == ___ATTR_FEN___) this.fen = newValue;
       else if (name == ___SQUAREWHITE___)
         this.style.setProperty("--" + ___SQUAREWHITE___, newValue);
       else if (name == ___SQUAREBLACK___)
@@ -730,9 +827,13 @@ customElements.define(
       let idxRank = ranksAscending.indexOf(rank) + 1; // 1 to 8
       let piece_is = "none";
       let playdirection = false;
-      let piece = this.levelPieces && this.at(square);
-      if (piece.length > 1) piece = piece[0];
-      let square_element = this.levelSquares.squares(square);
+      let piece = this.layerPieces && this.at(square);
+      if (piece.length > 1) {
+        //console.warn(piece[0].is, piece[1].is);
+        if (this.draggingPiece) piece = this.draggingPiece;
+        else piece = piece[1];
+      }
+      let square_element = this.layerSquares.squares(square);
       if (piece) {
         piece_is = piece.is;
         playdirection = piece_is.includes(___WHITE___) ? 1 : -1;
@@ -753,7 +854,8 @@ customElements.define(
     }
   }
 );
-let board = document.querySelector("game-board");
+let board = document.querySelector("chessly-board");
+//board.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 board.fen = "4rrk1/1b2b2p/ppn5/3p1pnq/1P1N2p1/P1PB2P1/5PNP/R1BQ1RK1";
 //board.fen = '8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3';
 //board.add_board_piece("white-queen", "E4");
