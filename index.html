@@ -8,18 +8,17 @@
     <style>
         body {
             overflow: hidden;
-            /* xdisplay: grid;
+            display: grid;
             grid-template-columns: 1fr 4fr 1fr;
-            grid-template-areas: "left main right"; */
-            /* --squareblack: red; */
+            grid-template-areas: "left main right";
         }
 
 
-        body>img{
-            position:absolute;
-            top:0;
-            left:0;
-            z-index:3;
+        body>img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 3;
             visibility: hidden;
         }
 
@@ -49,10 +48,11 @@
     <img is=black-queen style=width:45vw>
     <img is=white-queen style=width:45vw>
     <hr> -->
-    <game-board id=Chess fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR squarewhite=whitesmoke></game-board>
+    <chessly-board id=Chess></chessly-board>
+    <!-- <chessly-board id=Game1 fen="8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3 "> </chessly-board> --> -->
     <!-- <br>
-        <game-board id=Game1 fen=8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3> </game-board> <hr>
-            <game-board id=Game2> <img is=white-king at=h2>
+        <chessly-board id=Game1 fen=8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3> </chessly-board> <hr>
+            <chessly-board id=Game2> <img is=white-king at=h2>
                 <img is=white-queen at=d5>
                 <img is=white-rook at=h7>
                 <img is=white-knight at=g5>
@@ -67,8 +67,8 @@
                 <img is=black-knight at=f2>
                 <img is=black-pawn at=d4>
                 <img is=black-pawn at=f3>
-            </game-board> -->
+            </chessly-board> -->
 </body>
 
 </html>
-Published: 2019-05-13 14:46 
+Published: 2019-05-20 15:15 
