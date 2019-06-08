@@ -7,106 +7,186 @@
     <script defer src="chessly.js"></script>
     <style>
         body {
-            overflow: hidden;
+            /* overflow: hidden; */
             font-family: Arial, Helvetica, sans-serif;
+            max-width: 100vh;
+            margin: 0 auto;
+            background: lightgray;
+
+            --textstroke: 1px black;
         }
 
-        main {
+        #GameGrid {
             display: grid;
-            grid-template-columns: 1fr 4fr 1fr;
+            grid-template-columns: 1fr 5fr 1fr;
             grid-template-areas: "left main right";
-            grid-gap: 2vw;
-
+            grid-gap: 1em;
         }
 
-        main div img {
-            max-width: 15vw;
+        #GameGrid img {
+            max-width: 100%;
         }
 
-        #Code {
+        #Documentation #Code {
             font-size: .8em;
         }
 
-        footer {
-            margin-top: .5em;
+        chessly-board {
+            display: block;
+            border: 2px solid grey;
+            margin-bottom: 1em;
+            position: relative;
         }
 
+        [result]::after {
+            font-size: 400%;
+            color: silver;
+            content: attr(result);
+        }
 
-        #Chess {
-            grid-area: main;
+        [current]::before {
+            font-size: 200%;
+            color: green;
+            content: attr(title);
+        }
+
+        [result]::after,
+        [current]::before {
+            position: absolute;
+            top: .2em;
+            width: 100%;
+            text-align: center;
+            -webkit-text-stroke: var(--textstroke);
+            z-index: 9999;
+        }
+
+        [result="win"]::after {
+            color: gold;
+        }
+
+        [current],
+        chessly-board:hover {
+            border-color: green;
+        }
+
+        #Hint {
+            color: blue
+        }
+
+        #Hint:hover::after {
+            content: attr(move);
         }
     </style>
 </head>
 
 <body>
-    <header>
-        <h2>CheSSly - Select the board you want to play and make the winning move</h2>
-        <!-- <h1>Deep Blue vs. Gary Kasparov - 1996 - Game 1</h1> -->
-        <p>IBM supercomputer "Deep Blue" versus world chesschampion Garry Kasparov was a pair of six-game chess matches.
-            The first match in Philadelphia in 1996 was won by Kasparov.<br>
-            The second match (below) in New York City in 1997 won by Deep Blue was the first defeat of a
-            reigning world
-            chess champion by a computer under tournament
-            conditions.</p>
-        <p id=Code>
+    <h3>CheSSly - Select the board you want to play and make the winning move <span id=Hint>[hint] </span></h3>
+    <p>In 1997 "Deep Blue" was the first computer to defeat reigning world champion Gary Kasparov
+        under tournament conditions [<a
+            href="https://en.wikipedia.org/wiki/Deep_Blue_versus_Garry_Kasparov">wikipedia</a>]</p>
+    <div id=GameGrid>
+        <div id=Kasparov><img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
+            <chessly-board fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1" move="PG7">
+            </chessly-board>
+            <chessly-board fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b" title="Game 1997 #3" result="tie">
+            </chessly-board>
+            <chessly-board fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5" result="tie">
+            </chessly-board>
+        </div>
+        <div>
+            <chessly-board id=Chess interactive=true mode=show/play/free> </chessly-board> <!-- -->
+                <a href="https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation">Forsyth Edwards Notation</a>
+                (FEN): <b><span id=FEN></span></b>
+        </div>
+        <div id=DeepBlue><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
+            <chessly-board fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w" title="Game 1997 #2" move="RA6">
+            </chessly-board>
+            <chessly-board fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4" result="tie">
+            </chessly-board>
+            <chessly-board fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w" title="Game 1997 #6" move="PC4">
+            </chessly-board>
+        </div>
+    </div>
+    <p>
+        CheSSly is a Custom Elements and CSS experiment, NOT a fully functional Chess Game,<br> if you want play chess
+        against a computer goto
+        <a href="http://www.chesshub.com/">ChessHub</a>,
+        <a href="https://beta.nextchessmove.com/">Next Chess Move</a>, <a href="http://www.chessnextmove.com/">Chess
+            Next Move</a> or <a href="https://www.chess.com/analysis">Chess.com</a>
+    </p>
+    <div id="Documentation">
+        <h2>&lt;chessly-board> - Custom Element documentation</h2>
+        displays a chessboard
+        <h3>Usage:</h3>
+        <p>
             &lt;html><br>
             &nbsp;&lt;head><br>
             &nbsp;&nbsp;&nbsp;&lt;script src="chessly.js">&lt;/script><br>
             &nbsp;&lt;/head><br>
             &nbsp;&lt;body><br>
-            &nbsp;&nbsp;&nbsp;&lt;chessly-board fen="<span id=FEN></span>">&lt;/chessly-board><br>
+            &nbsp;&nbsp;&nbsp;&lt;chessly-board fen="<span id=FENdoc></span>">&lt;/chessly-board><br>
             &nbsp;&lt;/body><br>
             &lt;/html>
         </p>
-    </header>
-    <main>
-        <div id=Left><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
-            <chessly-board fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w" title="Game 1997 #2" move="RA6">
-            </chessly-board>
-            <chessly-board fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w" title="Game 1997 #6" move="PC4">
-            </chessly-board>
-        </div>
-        <chessly-board id=Chess interactive=true mode=show/play/free> </chessly-board> <div id=Right><img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
-            <chessly-board fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1" move="PG7">
-            </chessly-board>
-
-            </div>
-    </main>
-    <footer>
-        CheSSly is a Custom Elements and CSS experiment, NOT a fully functional Chess Game, if you want play chess
-        against a computer goto
-        <a href="http://www.chesshub.com/">ChessHub</a>,
-        <a href="https://beta.nextchessmove.com/">Next Chess Move</a>, <a href="http://www.chessnextmove.com/">Chess
-            Next Move</a> or <a href="https://www.chess.com/analysis">Chess.com</a>
-    </footer>
+    </div>
     <script>
         window.onload = event => {
-            Chess.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-            let gameboards = document.querySelectorAll('chessly-board[title*="Game"]');
-            [...gameboards].map(board => {
-                let currentboard;
+            try {
+                const ___FEN___ = "fen";
+                let currentboard = false;
                 let savedfen;
-                board.onmouseover = event => {
-                    currentboard = event.target;
+                let gameboards = _ => document.querySelectorAll('chessly-board[title*="Game"]');
+                let setfen = fen => {
+                    Chess.fen = fen;
+                    FEN.innerHTML = fen;
+                    FENdoc.innerHTML = fen;
+                    localStorage.setItem(___FEN___, fen);
+                }
+                let setgame = nr => {
+                    currentboard = gameboards()[nr];
                     savedfen = Chess.fen;
-                    FEN.innerHTML = savedfen;
+                    setfen(savedfen);
                     Chess.fen = currentboard.fen;
                 }
-                board.onmouseout = event => {
-                    if (savedfen) {
-                        Chess.fen = savedfen;
-                        FEN.innerHTML = savedfen;
-                    }
-                }
-                board.onclick = event => {
-                    savedfen = false;
+                var urlParams = new URLSearchParams(window.location.search);
+                savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
+                if (savedfen) setfen(savedfen);
+                else setgame(0);
+                //Chess.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
-                }
-            });
+                [...gameboards()].map((board, nr) => {
+                    board.onmouseover = event => setgame(nr);
+                    board.onmouseout = event => {
+                        if (savedfen) {
+                            Chess.fen = savedfen;
+                            FEN.innerHTML = savedfen;
+                        }
+                    }
+                    board.onclick = event => {
+                        if (currentboard) {
+                            currentboard.removeAttribute("current");
+                        }
+                        currentboard = board;
+
+                        Hint.setAttribute("move", board.getAttribute("move"));
+                        board.setAttribute("current", "true");
+                        savedfen = false;
+                    }
+                });
+                Chess.addEventListener('dragged', event => {
+                    let fen = event.target.fen;
+                    setfen(fen);
+                    if (currentboard && event.detail.move == currentboard.getAttribute('move')) {
+                        currentboard.setAttribute("result", "win");
+                    };
+                });
+            } catch (e) {
+                console.error('chessly error', currentboard, e);
+            }
         }
     </script>
 </body>
 
 </html>
-Published: 2019-06-07 15:07 
+Published: 2019-06-08 15:48 
