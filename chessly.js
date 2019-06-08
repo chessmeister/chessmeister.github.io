@@ -28,6 +28,18 @@ let clear_drag = event => {
 let end_drag = event => {
   let { board } = event.target;
   let piece = board.at(event.target.at);    // pieces at square
+
+  board.dispatchEvent(new CustomEvent('dragged', {
+    bubbles: true,    // event bubbles UP the DOM
+    composed: true,   // !!! required so Event bubbles through the shadowDOM boundaries
+    detail: {
+      piece,
+      is: piece.is,
+      at: event.target.at,
+      move: FEN_translation_Map.get(piece.is) + event.target.at
+    }
+  }));
+
   board.draggingFromsquare.removeAttribute("dragstart");
   board.draggingFromsquare = false;
   if (piece.length > 1) {
@@ -37,6 +49,7 @@ let end_drag = event => {
   board.draggingPiece = false;
   event.target.board.showmoves();           // clear moves
   clear_drag(event);                        // clear destinations
+
 }
 
 //App declaration
@@ -68,6 +81,7 @@ const ___ATTR_SHOW_DESTINATIONS___ = "destination";
 const ___ATTR_SHOW_MOVES___ = "moves";
 const ___ATTR_INTERACTIVE___ = "interactive";
 
+const ___OUTLINE_ATTACKS___ = false;//"red";
 
 // Forsyth Edwards Notation
 let FEN_translation_Map = new Map();
@@ -251,7 +265,8 @@ function game_pieceSVG({
           this.setAttribute("draggable", "draggable");
           //dragstart
           this.addEventListener("dragstart", event => {
-            let { board } = piece = event.target;
+            let piece = event.target;
+            let { board } = piece;
             board.draggingPiece = piece;
             piece.show_moves_on_Moves_and_Destinations_layers(piece.at);
             start_drag(event);
@@ -298,7 +313,7 @@ function game_pieceSVG({
           this.setAttribute(___AT___, squarenameUpperCase(square));
         }
         attackFrom(square = false) {
-          if (square && this.board.draggingPiece) this.setAttribute(___OUTLINE___, "red");
+          if (___OUTLINE_ATTACKS___ && square && this.board.draggingPiece) this.setAttribute(___OUTLINE___, ___OUTLINE_ATTACKS___);
           else this.removeAttribute(___OUTLINE___);
         }
         get fen() {
@@ -582,42 +597,90 @@ customElements.define("square-black", class extends SquareElement { });
 let css_linebreak = `\n`;
 let gridrepeat = gap => `repeat(${squarecount}, ${(100 - (squarecount - 1) * gap) / squarecount}%)`;
 let cssgrid = gap =>
-  `position:absolute;width:100%;height:100%;box-sizing: border-box;` + css_linebreak +
-  `display:grid;grid-gap:${gap};grid-template-columns:${gridrepeat(gap)};grid-template-rows:${gridrepeat(gap)};` + css_linebreak +
-  `grid-template-areas: ${'"' + chunk([...all_board_squares], squarecount).join('" "').replace(/,/g, " ") + '"' + css_linebreak};` + css_linebreak +
-  `grid-auto-flow:row`;
+  `position:absolute;
+  width:100%;
+  height:100%;
+  box-sizing: border-box;` + css_linebreak +
+  `  display:grid;
+  grid-gap:${gap};
+  grid-template-columns:${gridrepeat(gap)};
+  grid-template-rows:${gridrepeat(gap)};` + css_linebreak +
+  `  grid-template-areas: ${css_linebreak + ' "' + chunk([...all_board_squares], squarecount).join('"' + css_linebreak + ' "').replace(/,/g, " ") + '"' + css_linebreak};` + css_linebreak +
+  `  grid-auto-flow:row`;
 
 let game_css =
-  `<style>:root {display:block;}` + css_linebreak +
-  `*{box-sizing:border-box;}` + css_linebreak +
-  `#board{position:relative;border:var(--border, 1vh solid black);width:100%;max-width:90vh;margin:0 auto;}` + css_linebreak +
-  `#board:after{content:"";display:block;padding-bottom:100%}` + css_linebreak +// square sized board
+  `<style>:root {
+    display:inline-block;
+  }` + css_linebreak +
+  `*{
+    box-sizing:border-box;
+  }` + css_linebreak +
+  `#board{position:relative;
+    /* border:var(--border, 1vh solid black); */
+    width:100%;
+    max-width:90vh;
+    margin:0 auto;
+  }` + css_linebreak +
+  `#board:after{
+    content:"";
+    display:block;
+    padding-bottom:100%
+  }` + css_linebreak +// square sized board
   //only Chrome does conic-gradient to create a checkboard layout:
   //+ `#board{--sqblack:var(--,#b58863);--sqwhite:var(--${___SQUAREWHITE___},#00d9b5);--sqempty:green;}`
   //+ `#board{background:conic-gradient(var(--sqblack) 0.25turn, var(--sqwhite) 0.25turn 0.5turn, var(--sqblack) 0.5turn 0.75turn, var(--sqwhite) 0.75turn) top left/25% 25% repeat}`
-  `square-white{--bgcolor:var(--${___SQUAREWHITE___},#f0e9c5)}` + css_linebreak +
-  `square-black{--bgcolor:var(--${___SQUAREBLACK___},#b58863)}` + css_linebreak +
-  `#${___LAYER_ID_SQUARES___} square-white,#${___LAYER_ID_SQUARES___} square-black{background-color:var(--bgcolor)}` + css_linebreak +
+  `square-white{
+    --bgcolor:var(--${___SQUAREWHITE___},#f0e9c5)
+  }` + css_linebreak +
+  `square-black{
+    --bgcolor:var(--${___SQUAREBLACK___},#b58863)
+  }` + css_linebreak +
+  `#${___LAYER_ID_SQUARES___} square-white,#${___LAYER_ID_SQUARES___} square-black{
+    background-color:var(--bgcolor)
+  }` + css_linebreak +
 
   //create grid-area for every square name (A1 to H8)
   `${all_board_squares.map(square => `[at=${square}]{grid-area:${square}}`).join(css_linebreak)}` + css_linebreak +
 
-  `board-layer{${cssgrid(0)};user-select:none}` + css_linebreak +
-  `square-white:not([at]),square-black:not([at]){border:1px solid red}` + css_linebreak +// extra warning for squares without a piece
+  `board-layer{
+    ${cssgrid(0)};
+    user-select:none
+  }` + css_linebreak +
+  `square-white:not([at]),square-black:not([at]){
+    border:1px solid red
+  }` + css_linebreak +// extra warning for squares without a piece
   // `#squares >*[piece="none"]:before{font-size:var(--squarefontsize,0px);z-index:1;display:block;content:attr(at);position:relative;text-align:center;top:40%;color:var(--squarecolor,black);font-family:arial;cursor:not-allowed}` + //cell File/Rank text
   // `#squares >*{border:1px solid red}` + //cell File/Rank text
   // `#squares >*{position:relative;border:1px solid red}` + //cell File/Rank text
 
-  `#${___LAYER_ID_DESTINATIONS___} >*[from]{border:.5vh solid lightgreen}` + css_linebreak +//destinations
-  `#${___LAYER_ID_DESTINATIONS___} >*[dragstart]{border:.5vh dashed var(--bgcolor);background:lightgreen}` + css_linebreak +//(dragstart) from location
+  `#${___LAYER_ID_DESTINATIONS___} >*[from]{
+    border:.5vh solid lightgreen
+  }` + css_linebreak +//destinations
+  `#${___LAYER_ID_DESTINATIONS___} >*[dragstart]{
+    border:.5vh dashed var(--bgcolor);
+    background:lightgreen
+  }` + css_linebreak +//(dragstart) from location
   //possible moves for this piece
-  `#${___LAYER_ID_MOVES___} >*[from]{width:90%;height:90%;margin:5%;border:.5vh dashed green}` + css_linebreak +
+  `#${___LAYER_ID_MOVES___} >*[from]{
+    width:90%;
+    height:90%;
+    margin:5%;
+    border:.5vh dashed green
+  }` + css_linebreak +
   //  `#moves >*:not([piece="none"]){border-color:red}` +
 
-  `.rotated,.rotated img{transform:rotate(180deg)}` + css_linebreak +
-  `img:not([at]){background:red;}` + css_linebreak +//debug
-  `img[at]{width:100%;z-index:11;cursor:grab}` + css_linebreak +
+  `.rotated,.rotated img{
+    transform:rotate(180deg)
+  }` + css_linebreak +
+  `img:not([at]){
+    background:red;
+  }` + css_linebreak +//debug
+  `img[at]{
+    width:100%;
+    z-index:11;
+  }` + css_linebreak +
   `</style>` + css_linebreak +
+
 
   `<style id=attack_and_defend_dropshadow>` +
   `#${___LAYER_ID_PIECES___}{--swa:drop-shadow(var(--dropsize) 0px 1px darkred);--swd:drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)}` +
@@ -633,7 +696,14 @@ let game_css =
   `<style id=attack_and_defend_counters>` +
   /* */ `#${___LAYER_ID_SQUARES___} [attackers]:before{z-index:1;content:attr(defenders_count)"-"attr(attackers_count);text-align:center;display:block;position:relative;width:100%;height:100%}` +
   /* */ `#${___LAYER_ID_SQUARES___} [defenders]:not([attackers]):after{z-index:1;content:" " attr(defenders_count);text-align:left;display:block;position:relative;width:100%;height:100%}` +
-  `</style>`;
+  `</style>` +
+
+  `<style id=css_interactive_board>
+    img[at]{
+      cursor:grab
+    }
+  </style>`
+  ;
 
 customElements.define("board-layer", class extends HTMLElement {
   static get observedAttributes() {
@@ -735,8 +805,12 @@ customElements.define(
       this.initfen = false;
     }
 
-    make_board_interactive() {
-      this.interactive = true;
+    make_board_interactive(interactive = true) {
+      this.interactive = interactive;
+      window.bb = this;
+
+      this.shadowRoot.querySelector('[id="css_interactive_board"]').disabled = !interactive;
+
       this.layerMoves.layerHTML(() => true); // shows cell numbers for empty fields
       this.layerDestinations.layerHTML(() => true); // shows destinations
 
