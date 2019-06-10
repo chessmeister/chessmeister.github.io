@@ -96,10 +96,15 @@
             border: 2px solid grey;
             margin-bottom: var(--defaultmargin);
             position: relative;
+            /* --chessly-squarelabel: transparent; */
+            --chessly-attack-color: darkred;
+            --chessly-defend-color: darkgreen;
+            --chessly-squarewhite-color: #f0e9c5;
+            --chessly-squareblack-color: #b58863;
         }
 
         [result]::after {
-            font-size: 400%;
+            font-size: 300%;
             color: silver;
             content: attr(result);
         }
@@ -150,7 +155,7 @@
             /* width: 100%;
             border: none; */
             margin: .5em;
-            background: teal;
+            background: grey;
         }
     </style>
     <style id="Designer" onload="this.disabled=true">
@@ -177,7 +182,8 @@
                 href="https://en.wikipedia.org/wiki/Deep_Blue_versus_Garry_Kasparov">wikipedia</a>]</p>
         <p>
             <p>
-                Click any of the 3 winning boards you want to play and make the winning move <span id=Hint>[hint]
+                Click any of the 3 winning boards you want to play. Play the White move that made Black resign <span
+                    id=Hint>[hint]
                 </span>
             </p>
     </div>
@@ -193,9 +199,9 @@
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
             <chessly-board fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1" move="PG7">
             </chessly-board>
-            <chessly-board fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b" title="Game 1997 #3" result="tie">
+            <chessly-board fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b" title="Game 1997 #3" result="draw">
             </chessly-board>
-            <chessly-board fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5" result="tie">
+            <chessly-board fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5" result="draw">
             </chessly-board>
         </div>
         <div class="design">
@@ -214,7 +220,7 @@
         <div id=DeepBlue class="challenge"><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
             <chessly-board fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w" title="Game 1997 #2" move="RA6">
             </chessly-board>
-            <chessly-board fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4" result="tie">
+            <chessly-board fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4" result="draw">
             </chessly-board>
             <chessly-board fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w" title="Game 1997 #6" move="PC4">
             </chessly-board>
@@ -235,10 +241,11 @@
     &nbsp;&nbsp;&lt;script src="chessly.js">&lt;/script>
     &lt;/head>
         </pre>
-        creates <a href="https://developers.google.com/web/fundamentals/web-components/customelements">Custom
-            Elements:</a>
+        <h3>This single file creates <a
+                href="https://developers.google.com/web/fundamentals/web-components/customelements">Custom
+                Elements:</a></h3>
         <ul>
-            <li>extending Built in IMG element to display chess pieces:
+            <li>extending Built in IMG element to display chess pieces: (no external SVG files required)
                 <br>
                 <pre class="htmlcode">
 &lt;img <b>is="white-king"</b>>
@@ -253,11 +260,27 @@
 
             </li>
         </ul>
-        For more information see: <a
+        <h3>The board can be configured with CSS variables:</h3>
+        <pre>
+chessly-board {
+    --chessly-squarelabel-color: black;// transparent sets squarelabels not visible
+    --chessly-attack-color: darkred;
+    --chessly-defend-color: darkgreen;
+    --chessly-undefended-color: red;
+    --chessly-squarewhite-color: #f0e9c5;
+    --chessly-squareblack-color: #b58863;
+}
+        </pre>
+        <h3>Avialable on GitHub: <a
+                href="https://github.com/chessly/chessly.github.io">https://github.com/chessly/chessly.github.io</a>
+        </h3>
+        <hr>
+        For more information on SVG and Custom Elements see: <a
             href="https://card-ts.github.io/playingcardts/">https://card-ts.github.io/playingcardts/</a>
+        <hr>
     </div>
     <!-- Fork me on GitHub label  -->
-    <a style="position:fixed;top:0;right:0" href="https://github.com/card-ts/playingcardts"><img width="160"
+    <a style="position:fixed;top:0;right:0" href="https://github.com/chessly/chessly.github.io"><img width="160"
             height="160"
             src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png?resize=160%2C160"></a>
 
@@ -283,6 +306,7 @@
         var urlParams = new URLSearchParams(window.location.search);
         savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
         window.onload = event => {
+            console.log('chessly demo page loaded');
             if (savedfen) setfen(savedfen);
             else setgame(0);
 
@@ -331,6 +355,14 @@
                 let fen = event.target.fen;
                 setfen(fen);
             });
+            window.onpopstate = function (event) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var fen = urlParams.get(___FEN___);
+                console.log(window.location.search, fen);
+                if (fen) {
+                    setfen(fen);
+                }
+            };
             //show body after all is done... FireFox does it different
             document.body.style.visibility = 'initial';
 
@@ -339,4 +371,4 @@
 </body>
 
 </html>
-Published: 2019-06-10 11:35 
+Published: 2019-06-10 13:45 
