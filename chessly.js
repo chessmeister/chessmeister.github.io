@@ -81,8 +81,6 @@ const ___SQUARECOUNT___ = 8;//chess or checkers or any board width/height
 
 const ___WHITE___ = "white";
 const ___BLACK___ = "black"
-const ___SQUAREWHITE___ = "square" + ___WHITE___; //#f0d9b5
-const ___SQUAREBLACK___ = "square" + ___BLACK___; //#b58863
 const ___ATTACKED_BY___ = "attackers";
 const ___DEFENDED_BY___ = "defenders";
 const ___LAYER_ID_SQUARES___ = "all_board_squares";
@@ -205,7 +203,7 @@ let make_Object_properties_from_attributes = (
  * returns SVG code for chess piece (is:'white-king')
  * @param {*}
  */
-function game_pieceSVG({
+function SVG_chesspiece({
   is, // white-pawn, black-rook etc
   //default optional settings:
   outline = "#666", // red outline
@@ -265,7 +263,7 @@ function game_pieceSVG({
         circle(330, 743, circlesize / 2) +
         circle(440, 737, circlesize / 2) +
         circle(550, 743, circlesize / 2)
-    }[is.split("-")[1]]}</g></svg>`;
+    }[is.split("-")[1]]}</g></svg>`;//get piece type as object key
   return svg.replace(/</g, "%3C").replace(/>/g, "%3E").replace(/#/g, "%23");
 }
 
@@ -290,7 +288,11 @@ function game_pieceSVG({
         }
         setIMGsrc() {
           let parameters = attributes_to_parametersObject(this, {}, this.constructor.observedAttributes);
-          this.src = game_pieceSVG(parameters);
+          if (this.board) {
+            //todo get CSS property from board to decorate chess piece
+            parameters.piececolors = [["eee", "999"], ["111", "888"]]; // white,lightgrey  black,drakgrey
+          }
+          this.src = SVG_chesspiece(parameters);
         }
         show_piece_moves(attack_from_square, layers = [this.board.layerDestinations]) {
           this.calculate_piece_moves().piece_destinations
@@ -691,13 +693,13 @@ let game_css =
     padding-bottom:100%
   }` + css_linebreak +// square sized board
   //only Chrome does conic-gradient to create a checkboard layout:
-  //+ `#board{--sqblack:var(--,#b58863);--sqwhite:var(--${___SQUAREWHITE___},#00d9b5);--sqempty:green;}`
+  //+ `#board{--sqblack:#b58863;--sqwhite:#00d9b5;--sqempty:green;}`
   //+ `#board{background:conic-gradient(var(--sqblack) 0.25turn, var(--sqwhite) 0.25turn 0.5turn, var(--sqblack) 0.5turn 0.75turn, var(--sqwhite) 0.75turn) top left/25% 25% repeat}`
   `square-white{
-    --bgcolor:var(--${___SQUAREWHITE___},#f0e9c5)
+    --bgcolor:var(--chessly-squarewhite-color,#f0e9c5)
   }` + css_linebreak +
   `square-black{
-    --bgcolor:var(--${___SQUAREBLACK___},#b58863)
+    --bgcolor:var(--chessly-squareblack-color,#b58863)
   }` + css_linebreak +
   `#${___LAYER_ID_SQUARES___} square-white,
    #${___LAYER_ID_SQUARES___} square-black{
@@ -725,7 +727,7 @@ let game_css =
     position:relative;
     text-align:center;
     top:40%;
-    color:var(--squarecolor,black);
+    color:var(--chessly-squarelabel-color,black);
     font-family:arial;
     cursor:not-allowed
   }` +
@@ -765,7 +767,7 @@ let game_css =
 
 
   `<style id=attack_and_defend_dropshadow>` +
-  `#${___LAYER_ID_PIECES___}{--swa:drop-shadow(var(--dropsize) 0px 1px darkred);--swd:drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)}` +
+  `#${___LAYER_ID_PIECES___}{--swa:drop-shadow(var(--dropsize) 0px 1px var(--chessly-attack-color,darkred));--swd:drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)}` +
   // you can't set :before and :after on IMG elements!
   /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}][${___DEFENDED_BY___}]{filter:var(--swa) var(--swd)}` +
   /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){filter:var(--swa)}` +
@@ -773,7 +775,7 @@ let game_css =
 
   /* Attacked piece without defenders red on both sides */
   `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){` +
-  `filter:drop-shadow(var(--dropsize) 0px 1px red) drop-shadow(calc(-1*var(--dropsize)) 0px 1px red);` +
+  `filter:drop-shadow(var(--dropsize) 0px 1px red) drop-shadow(calc(-1*var(--dropsize)) 0px 1px var(--chessly-undefended-color,red));` +
   `</style>` +
 
 
@@ -782,7 +784,7 @@ let game_css =
   #${___LAYER_ID_SQUARES___} [${___ATTACKED_BY___}]:after
   {
     z-index:1;
-    display:block;
+    display:none;/*//!todo set to block when counters are correct */
     position:relative;
     width:80%;
     height:100%;
@@ -901,7 +903,7 @@ customElements.define(
   "chessly-board",
   class extends HTMLElement {
     static get observedAttributes() {
-      return [___ATTR_FEN___, ___ATTR_INTERACTIVE___, ___SQUAREWHITE___, ___SQUAREBLACK___];
+      return [___ATTR_FEN___, ___ATTR_INTERACTIVE___];
     }
     constructor() {
       super();
@@ -1087,10 +1089,7 @@ customElements.define(
       } else if (name == ___ATTR_INTERACTIVE___) {
         if (oldValue && newValue === "true")
           this.make_board_interactive();
-      } else if (name == ___SQUAREWHITE___)
-        this.style.setProperty("--" + ___SQUAREWHITE___, newValue);
-      else if (name == ___SQUAREBLACK___)
-        this.style.setProperty("--" + ___SQUAREBLACK___, newValue);
+      }
     }
     squareData(fensquare) {
       let file = fensquare[0];
