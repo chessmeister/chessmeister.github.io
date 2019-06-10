@@ -5,7 +5,66 @@
     <meta charset="UTF-8">
     <title>Chessly</title>
     <script defer src="chessly.js"></script>
+    <style id=theme_greenwhite>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            visibility: hidden;
+            color: whitesmoke;
+            --theme_pre_size: 1.2em;
+        }
+
+        p {
+            margin-left: var(--theme_pre_size)
+        }
+
+        a:link,
+        a:visited,
+        a:hover,
+        a:active {
+            color: blue;
+        }
+
+        pre {
+            --size: var(--theme_pre_size);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: var(--size);
+            font-weight: bold;
+            margin-left: var(--size);
+        }
+
+        .footnote,
+        h1,
+        h2,
+        h3 {
+            text-shadow: 2px 2px 1px black;
+            margin-left: 1vw;
+        }
+
+        h3 {
+            text-shadow: 1px 1px 1px black;
+        }
+
+        h1 a,
+        h2 a {
+            text-shadow: .3px .3px 0 lightgrey;
+        }
+
+        h3 a {
+            text-shadow: 0 0;
+        }
+
+        .greencloth {
+            /* saves loading an image, looks better than a solid darkgreen background */
+            background-image: url('data:image/webp;base64,UklGRpgAAABXRUJQVlA4IIwAAAAwBACdASoeAB4APikSh0KhoQoCAAwBQllYz41AABFV/n8AItOaJepDavAA/vkKUe5BGtPR5aeKP/4hd7G2///gzv/f1X/gzv/BmUX9cJtST/Z9T/XsQq/MQV+1v8m2uukhu3nFYS/A5iTPpyXsMLAwk6xasWWFDPdx7OkWouLHKfqaoozRIW3R5D5MAA==');
+            background-size: cover;
+        }
+    </style>
     <style>
+        * {
+            /* margin: 0; */
+            box-sizing: border-box;
+        }
+
         body {
             /* overflow: hidden; */
             font-family: Arial, Helvetica, sans-serif;
@@ -14,13 +73,14 @@
             background: lightgray;
 
             --textstroke: 1px black;
+            --defaultmargin: .5em;
         }
 
         #GameGrid {
             display: grid;
             grid-template-columns: 1fr 5fr 1fr;
             grid-template-areas: "left main right";
-            grid-gap: 1em;
+            grid-gap: var(--defaultmargin);
         }
 
         #GameGrid img {
@@ -34,7 +94,7 @@
         chessly-board {
             display: block;
             border: 2px solid grey;
-            margin-bottom: 1em;
+            margin-bottom: var(--defaultmargin);
             position: relative;
         }
 
@@ -76,16 +136,60 @@
         #Hint:hover::after {
             content: attr(move);
         }
+
+        .design {
+            display: none;
+        }
+
+        #GameGrid .design {
+            width: 8vh;
+            margin: 0 auto;
+        }
+
+        .design img {
+            /* width: 100%;
+            border: none; */
+            margin: .5em;
+            background: teal;
+        }
+    </style>
+    <style id="Designer" onload="this.disabled=true">
+        .challenge {
+            display: none;
+        }
+
+        .design {
+            display: inline-block;
+        }
     </style>
 </head>
 
-<body>
-    <h3>CheSSly - Select the board you want to play and make the winning move <span id=Hint>[hint] </span></h3>
-    <p>In 1997 "Deep Blue" was the first computer to defeat reigning world champion Gary Kasparov
-        under tournament conditions [<a
-            href="https://en.wikipedia.org/wiki/Deep_Blue_versus_Garry_Kasparov">wikipedia</a>]</p>
+<body class="greencloth">
+    <h2>CheSSly - a <a href="https://developers.google.com/web/fundamentals/web-components/customelements">Custom
+            Elements</a> experiment - <button class="design"
+            onclick="(isdesignstate=false,Designer.disabled=true)">Play&nbsp;challenges</button><button
+            class="challenge" onclick="(isdesignstate=true,Designer.disabled=false)">Design a
+            game</button>
+    </h2>
+    <div class="challenge">
+        <p>In 1997 "Deep Blue" was the first computer to defeat world champion Gary Kasparov
+            under tournament conditions [<a
+                href="https://en.wikipedia.org/wiki/Deep_Blue_versus_Garry_Kasparov">wikipedia</a>]</p>
+        <p>
+            <p>
+                Click any of the 3 winning boards you want to play and make the winning move <span id=Hint>[hint]
+                </span>
+            </p>
+    </div>
+    <div class="design">
+        <p>
+            Design your own game. Select a piece then click on a square. Click a boardpiece to remove it.
+            <button onclick="Chess.fen='8/8/8/8/8/8/8/8';">empty board</button>
+            <button onclick="Chess.fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';">start board</button>
+        </p>
+    </div>
     <div id=GameGrid>
-        <div id=Kasparov><img
+        <div id=Kasparov class="challenge"><img
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
             <chessly-board fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1" move="PG7">
             </chessly-board>
@@ -94,12 +198,20 @@
             <chessly-board fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5" result="tie">
             </chessly-board>
         </div>
+        <div class="design">
+            <img is=white-king>
+            <img is=white-queen>
+            <img is=white-bishop>
+            <img is=white-knight>
+            <img is=white-rook>
+            <img is=white-pawn>
+        </div>
         <div>
             <chessly-board id=Chess interactive=true mode=show/play/free> </chessly-board> <!-- -->
                 <a href="https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation">Forsyth Edwards Notation</a>
                 (FEN): <b><span id=FEN></span></b>
         </div>
-        <div id=DeepBlue><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
+        <div id=DeepBlue class="challenge"><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
             <chessly-board fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w" title="Game 1997 #2" move="RA6">
             </chessly-board>
             <chessly-board fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4" result="tie">
@@ -107,86 +219,124 @@
             <chessly-board fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w" title="Game 1997 #6" move="PC4">
             </chessly-board>
         </div>
+        <div class="design">
+            <img is=black-king>
+            <img is=black-queen>
+            <img is=black-bishop>
+            <img is=black-knight>
+            <img is=black-rook>
+            <img is=black-pawn>
+        </div>
     </div>
-    <p>
-        CheSSly is a Custom Elements and CSS experiment, NOT a fully functional Chess Game,<br> if you want play chess
-        against a computer goto
-        <a href="http://www.chesshub.com/">ChessHub</a>,
-        <a href="https://beta.nextchessmove.com/">Next Chess Move</a>, <a href="http://www.chessnextmove.com/">Chess
-            Next Move</a> or <a href="https://www.chess.com/analysis">Chess.com</a>
-    </p>
     <div id="Documentation">
-        <h2>&lt;chessly-board> - Custom Element documentation</h2>
-        displays a chessboard
-        <h3>Usage:</h3>
-        <p>
-            &lt;html><br>
-            &nbsp;&lt;head><br>
-            &nbsp;&nbsp;&nbsp;&lt;script src="chessly.js">&lt;/script><br>
-            &nbsp;&lt;/head><br>
-            &nbsp;&lt;body><br>
-            &nbsp;&nbsp;&nbsp;&lt;chessly-board fen="<span id=FENdoc></span>">&lt;/chessly-board><br>
-            &nbsp;&lt;/body><br>
-            &lt;/html>
-        </p>
+        <h2>chessly.js - Custom Element documentation</h2>
+        <pre class="htmlcode">
+    &lt;head>
+    &nbsp;&nbsp;&lt;script src="chessly.js">&lt;/script>
+    &lt;/head>
+        </pre>
+        creates <a href="https://developers.google.com/web/fundamentals/web-components/customelements">Custom
+            Elements:</a>
+        <ul>
+            <li>extending Built in IMG element to display chess pieces:
+                <br>
+                <pre class="htmlcode">
+&lt;img <b>is="white-king"</b>>
+&lt;img <b>is="white-knight"</b>>
+&lt;img <b>is="black-rook"</b>>
+                </pre>
+            </li>
+            <li>An autonomous Web Component displaying a full chess board:
+                <pre class="htmlcode">
+&lt;chessly-board fen="<span id=FENdoc></span>">&lt;/chessly-board>
+</pre>
+
+            </li>
+        </ul>
+        For more information see: <a
+            href="https://card-ts.github.io/playingcardts/">https://card-ts.github.io/playingcardts/</a>
     </div>
+    <!-- Fork me on GitHub label  -->
+    <a style="position:fixed;top:0;right:0" href="https://github.com/card-ts/playingcardts"><img width="160"
+            height="160"
+            src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png?resize=160%2C160"></a>
+
     <script>
+        const ___FEN___ = "fen";
+        let isdesignstate = false;
+        let challengeboard = false;
+        let designpiece = false;
+        let savedfen;
+        let gameboards = _ => document.querySelectorAll('chessly-board[title*="Game"]');
+        let piecebuttons = _ => document.querySelectorAll('.design img');
+        let setfen = fen => {
+            Chess.fen = fen;
+            FEN.innerHTML = fen;
+            FENdoc.innerHTML = fen;
+            localStorage.setItem(___FEN___, fen);
+        }
+        let setgame = nr => {
+            challengeboard = gameboards()[nr];
+            savedfen = challengeboard.fen;
+            setfen(savedfen);
+        }
+        var urlParams = new URLSearchParams(window.location.search);
+        savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
         window.onload = event => {
-            try {
-                const ___FEN___ = "fen";
-                let currentboard = false;
-                let savedfen;
-                let gameboards = _ => document.querySelectorAll('chessly-board[title*="Game"]');
-                let setfen = fen => {
-                    Chess.fen = fen;
-                    FEN.innerHTML = fen;
-                    FENdoc.innerHTML = fen;
-                    localStorage.setItem(___FEN___, fen);
+            if (savedfen) setfen(savedfen);
+            else setgame(0);
+
+            [...piecebuttons()].map(img => {
+                img.onclick = _ => {
+                    if (designpiece) designpiece.outline(false);
+                    designpiece = img;
+                    designpiece.outline("green");
                 }
-                let setgame = nr => {
-                    currentboard = gameboards()[nr];
+            });
+            [...gameboards()].map((board, nr) => {
+                board.onmouseover = event => {
                     savedfen = Chess.fen;
-                    setfen(savedfen);
-                    Chess.fen = currentboard.fen;
+                    Chess.fen = board.fen;
                 }
-                var urlParams = new URLSearchParams(window.location.search);
-                savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
-                if (savedfen) setfen(savedfen);
-                else setgame(0);
-                //Chess.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-
-                [...gameboards()].map((board, nr) => {
-                    board.onmouseover = event => setgame(nr);
-                    board.onmouseout = event => {
-                        if (savedfen) {
-                            Chess.fen = savedfen;
-                            FEN.innerHTML = savedfen;
-                        }
+                board.onmouseout = event => {
+                    if (savedfen) {
+                        Chess.fen = savedfen;
+                        FEN.innerHTML = savedfen;
                     }
-                    board.onclick = event => {
-                        if (currentboard) {
-                            currentboard.removeAttribute("current");
-                        }
-                        currentboard = board;
+                }
+                board.onclick = event => {
+                    if (challengeboard) challengeboard.removeAttribute("current");
+                    challengeboard = board;
+                    board.setAttribute("current", "true");
 
-                        Hint.setAttribute("move", board.getAttribute("move"));
-                        board.setAttribute("current", "true");
-                        savedfen = false;
-                    }
-                });
-                Chess.addEventListener('dragged', event => {
-                    let fen = event.target.fen;
-                    setfen(fen);
-                    if (currentboard && event.detail.move == currentboard.getAttribute('move')) {
-                        currentboard.setAttribute("result", "win");
-                    };
-                });
-            } catch (e) {
-                console.error('chessly error', currentboard, e);
-            }
+                    Hint.setAttribute("move", board.getAttribute("move"));
+                    savedfen = false;
+                }
+            });
+            Chess.addEventListener('chessly-event', event => {
+                let { name, type, square, move } = event.detail;
+                if (
+                    challengeboard
+                    && name == "dragged"
+                    && move == challengeboard.getAttribute('move')
+                ) {
+                    challengeboard.setAttribute("result", "win");
+                };
+                if (isdesignstate && name == "click") {
+                    if (type == "square" && designpiece)
+                        Chess.add_board_piece(designpiece.is, square);
+                    else
+                        Chess.remove_board_piece(square)
+                }
+                let fen = event.target.fen;
+                setfen(fen);
+            });
+            //show body after all is done... FireFox does it different
+            document.body.style.visibility = 'initial';
+
         }
     </script>
 </body>
 
 </html>
-Published: 2019-06-08 15:48 
+Published: 2019-06-10 11:35 
