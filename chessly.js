@@ -1,69 +1,94 @@
 
+/**
+ * returns True/False indicating odd value (for both negative and positive x)
+ * @param {number} x
+ */
 let isOdd = x => (x === 0 ? false : (x & -x) === 1); // isOdd returns T/F for negative and possible values
 
-let chunk = (// chunck a string in equal sizes
+/**
+ * chunck a string in equal sizes
+ * @param {array} arr - 
+ * @param {number} sizearr
+ */
+let chunk = (
   arr, // input Array
   size, // chunk size
+  //declare helper array
   r = [] // result: initialized on first call, set in recursion call
-) => (r.push(arr.splice(0, size)), r.concat(arr.length ? chunk(arr, size) : [])); // [] is concatted last!
+) => (
+    r.push(arr.splice(0, size))
+    , r.concat(arr.length ? chunk(arr, size) : [])// [] is concatted last!
+  );
 
-let getBoundingClientRect = x => x.getBoundingClientRect();
-
-// Drag events
+// ======================================================== Drag events
+/**
+ * start drag administration after dragstart or touchmove (mobile)
+ * @param {event}
+ */
 let start_drag = event => {
-  let { board, at: square } = piece = event.target;
+  let piece = event.target;
+  let { board, at: square } = piece;
+  //mark the locations this piece can goto
   piece.show_moves_on_Moves_and_Destinations_layers(square);
+  //mark the start location
   board.draggingFromsquare = board.layerDestinations.squares(piece.at);
-  //board.draggingFromsquare = piece.at;
-  board.draggingFromsquare.setAttribute("dragstart", piece.is);
+  board.draggingFromsquare.setAttribute(___ATTR_DRAGSTART___, piece.is);
 }
 
+/**
+ * clear up after dragging a piece
+ * @param {event} 
+ */
 let clear_drag = event => {
-  let { board } = piece = event.target;
+  let piece = event.target;
+  let { board } = piece;
   if (!board.draggingPiece) {
     board.layerMoves.clear_squares_with_from_attributes();
     board.layerDestinations.clear_squares_with_from_attributes();
   }
 }
+
+/**
+ * end dragging a piece, send event
+ * @param {event}
+ */
 let end_drag = event => {
   let { board } = event.target;
-  let piece = board.at(event.target.at);    // pieces at square
+  let piece = board.piece_at_square(event.target.at);    // pieces at square
 
-  board.dispatchEvent(new CustomEvent('dragged', {
-    bubbles: true,    // event bubbles UP the DOM
-    composed: true,   // !!! required so Event bubbles through the shadowDOM boundaries
-    detail: {
+  if (board.draggingFromsquare) {
+    board.dispatch('dragged', {
       piece,
       is: piece.is,
       at: event.target.at,
       move: FEN_translation_Map.get(piece.is) + event.target.at
-    }
-  }));
+    });
 
-  board.draggingFromsquare.removeAttribute("dragstart");
+    board.draggingFromsquare.removeAttribute(___ATTR_DRAGSTART___);
+  }
   board.draggingFromsquare = false;
   if (piece.length > 1) {
     if (piece[0] === board.draggingPiece) piece[1].remove();
     else piece[0].remove();
   }
   board.draggingPiece = false;
-  event.target.board.showmoves();           // clear moves
+  event.target.board.show_moves_piece_in_square();           // clear moves
   clear_drag(event);                        // clear destinations
-
 }
 
-//App declaration
+// ======================================================== App declaration
+const ___SQUARECOUNT___ = 8;//chess or checkers or any board width/height
+
 const ___WHITE___ = "white";
 const ___BLACK___ = "black"
 const ___SQUAREWHITE___ = "square" + ___WHITE___; //#f0d9b5
 const ___SQUAREBLACK___ = "square" + ___BLACK___; //#b58863
 const ___ATTACKED_BY___ = "attackers";
 const ___DEFENDED_BY___ = "defenders";
-const ___LAYER_ID_SQUARES___ = "squares";
-const ___LAYER_ID_MOVES___ = "moves";
-const ___LAYER_ID_DRAGPIECE___ = "dragpiece";
-const ___LAYER_ID_PIECES___ = "pieces";
-const ___LAYER_ID_DESTINATIONS___ = "destinations";
+const ___LAYER_ID_SQUARES___ = "all_board_squares";
+const ___LAYER_ID_MOVES___ = "allowed_piece_moves";
+const ___LAYER_ID_PIECES___ = "pieces_on_board";
+const ___LAYER_ID_DESTINATIONS___ = "piece_destinations";
 const ___PROTECTED_BY___ = "protectors";
 const ___PROTECTED_BY_WHITE___ = ___PROTECTED_BY___ + ___WHITE___;
 const ___PROTECTED_BY_BLACK___ = ___PROTECTED_BY___ + ___BLACK___;
@@ -76,21 +101,22 @@ const ___ELEMENT_IS___ = "is";
 
 const ___AT___ = "at";
 const ___OUTLINE___ = "outline";
+const ___ATTR_DRAGSTART___ = "dragstart";
 
 const ___ATTR_SHOW_DESTINATIONS___ = "destination";
 const ___ATTR_SHOW_MOVES___ = "moves";
 const ___ATTR_INTERACTIVE___ = "interactive";
 
-const ___OUTLINE_ATTACKS___ = false;//"red";
+const ___OUTLINE_ATTACKS___ = false;//"red";// set to CSS colorvalue to outline SVG piece//todo isn't reset while dragging
 
 // Forsyth Edwards Notation
+// maps P->white-pawn and white-pawn->P
 let FEN_translation_Map = new Map();
 
-
-//chess or checkers or any board width/height
-let squarecount = (cnt = 8);
-let files = [];
-let ranks = [];
+let files = [];// A to H
+let ranks = [];// 1 to 8
+let cnt = ___SQUARECOUNT___;
+//fill files and ranks
 do {
   files.unshift(String.fromCharCode(64 + cnt)); // A,B,C,D,...
   ranks.push(String(cnt));                      // 1,2,3,4,...
@@ -98,16 +124,24 @@ do {
 let ranksAscending = [...ranks].reverse(); // 1 to N
 let all_board_squares = ranks.map(rank => files.map(file => file + rank)).flat();  // 'A8'.. 'H1'
 
+/**
+ * make sure notation is always 2 characters UPPERcase: A1
+ * @param {array} square
+ */
 let squarenameUpperCase = square => (square[0] + square[1]).toUpperCase();
 
+/**
+ * translate current cell to other location:
+ * ( 'D5' , 1 , -1 ) returns E4
+ * @param {string} sq
+ * @param {number} hf - horizontal file displacement
+ * @param {number} vr - vertical rank displacement
+ */
 let translateSquare = (
-  // translate current cell to other location:
-  // ( 'D5' , 1 , -1 ) => E4
   sq, // square: 'D5'
   hf, // horizontal/file translate: -1 0 1
   vr, // vertical/rank translate: -1 0 1
-
-  // *!* copied from other app; for extreme minification declare functions/variables as parameters so function body does not require let and return statement
+  //! parameters below are declarations, not used as parameter
   val = (
     // function!! *!*
     a, // files OR ranks array
@@ -116,13 +150,21 @@ let translateSquare = (
     n = a.indexOf(v) + t // new index in files/ranks array *!*
   ) =>
     n > -1 &&
-    n < squarecount && // new index is on board
+    n < ___SQUARECOUNT___ && // new index is on board
     a[n], // return false or new rank/file
 
   file = val(files, sq[0], hf), // new file from square translate
   rank = val(ranksAscending, sq[1], vr) // new rank from square translate
 ) => file && rank && file + rank; // if valid file/rank then return 'D6'
 
+
+/**
+ * translate current cell to other location:
+ * ( 'D5' , 1 , -1 ) returns E4
+ * @param {string} sq
+ * @param {number} hf - horizontal file displacement
+ * @param {number} vr - vertical rank displacement
+ */
 let attributes_to_parametersObject = (
   CE, // input: Custom Element
   init = {}, // optional initial/default parameters  attr-key:value
@@ -136,6 +178,11 @@ let attributes_to_parametersObject = (
     init // optional initial/default parameters  attr-key:value
   );
 
+/**
+ * creates properties for Custom Element attributes
+ * @param {DOMelement} CE - Custom Element this reference
+ * @param {array} attrs - optional parameter, default gets CE.constructor.observedAttributes
+ */
 let make_Object_properties_from_attributes = (
   CE,
   attrs = CE.constructor.observedAttributes
@@ -155,13 +202,14 @@ let make_Object_properties_from_attributes = (
   );
 
 /**
- * create SVG chess piece
- * @param {*} param0 
+ * returns SVG code for chess piece (is:'white-king')
+ * @param {*}
  */
 function game_pieceSVG({
   is, // white-pawn, black-rook etc
-  outline = "#666", // optional red outline
-  detailcolor = "#888",
+  //default optional settings:
+  outline = "#666", // red outline
+  detailcolor = "#888",// small lines in pawn and rook, circles in king
   //width and height
   size = 900,           // 993    larger value is smaller piece
   translate = "20,0",    // To center piece in square  org:50,0
@@ -263,40 +311,48 @@ function game_pieceSVG({
 
         make_piece_interactive() {
           this.setAttribute("draggable", "draggable");
-          //dragstart
           this.addEventListener("dragstart", event => {
             let piece = event.target;
-            let { board } = piece;
-            board.draggingPiece = piece;
+            piece.board.draggingPiece = piece;
             piece.show_moves_on_Moves_and_Destinations_layers(piece.at);
             start_drag(event);
           });
           //mouseover
           this.addEventListener("mouseover", event => {
             let piece = event.target;
-            let { board } = piece;
-            if (!board.draggingPiece)
+            if (!piece.board.draggingPiece)
               piece.show_moves_on_Moves_and_Destinations_layers(piece.at);
           });
           this.addEventListener("touchmove", event => {
             if (event.target.board) {
-              let { board } = piece = event.target;
+              let piece = event.target;
+              let { board } = piece;
               let { pageX, pageY } = event.targetTouches[0];
               let square = board.square_from_position(pageX, pageY);
               if (!board.draggingPiece) start_drag(event);
               //if dragged piece to ANOTHER square
-              if (!board.draggingPiece || board.draggingPiece.at != square) {
+              //todo merge with board.showdraggingpiece()
+              if (!board.draggingPiece || square != board.draggingPiece.at) {
                 board.draggingPiece = piece;
                 event.target.at = square;
-                board.showmoves(square);
+                board.show_moves_piece_in_square(square);
               }
             }
           }, { passive: true });
           this.addEventListener("touchend", end_drag, { passive: true });
-          //mouseout
           this.addEventListener("mouseout", clear_drag);
+          this.addEventListener("click", event => {
+            let piece = event.target;
+            piece.board.dispatch('click', {
+              type: "piece",
+              square: piece.at
+            });
+          });
         }
 
+        clickpiece() {
+
+        }
         connectedCallback() {// piece IMG
           this.setIMGsrc();
           this.board = this.getRootNode().host;
@@ -312,9 +368,21 @@ function game_pieceSVG({
         set at(square) {
           this.setAttribute(___AT___, squarenameUpperCase(square));
         }
+        outline(color = false) {
+          if (color)
+            this.setAttribute(___OUTLINE___, color);
+          else
+            this.removeAttribute(___OUTLINE___);
+        }
         attackFrom(square = false) {
-          if (___OUTLINE_ATTACKS___ && square && this.board.draggingPiece) this.setAttribute(___OUTLINE___, ___OUTLINE_ATTACKS___);
-          else this.removeAttribute(___OUTLINE___);
+          if (
+            ___OUTLINE_ATTACKS___
+            && square
+            && this.board.draggingPiece
+          )
+            this.setAttribute(___OUTLINE___, ___OUTLINE_ATTACKS___);
+          else
+            this.removeAttribute(___OUTLINE___);
         }
         get fen() {
           return FEN_translation_Map.get(piece_is);
@@ -325,9 +393,12 @@ function game_pieceSVG({
         get is() {
           return this.getAttribute(___ELEMENT_IS___);
         }
+        rect() {
+          return this.getBoundingClientRect();
+        }
         to(square) {
-          let from = this.board.square(this.at).rect;//destructure!
-          let to = this.board.square(square).rect;
+          let from = this.board.at(this.at).rect();//destructure!
+          let to = this.board.at(square).rect;
           this.animate(
             [
               {
@@ -344,7 +415,7 @@ function game_pieceSVG({
           let { idxFile, idxRank, piece_is, fen, playdirection } = squareData;
           let startFile = idxFile;
           let startRank = idxRank;
-          let idxBorder = squarecount + 1;  // playingfield is from 1 to squarecount
+          let idxBorder = ___SQUARECOUNT___ + 1;  // playingfield is from 1 to squarecount
           let reachableSquares = [];
           let attackMode = true;            // default , pawn sets attackmode to false for forward moves
           //let inbetweenPieces = [];
@@ -523,14 +594,6 @@ class SquareElement extends HTMLElement {
       this.removeAttribute(___ATTACKED_BY___);
       this.removeAttribute(___ATTACKED_BY___ + "_count");
       this.setAttribute(___ATTR_PIECE___, "none");
-
-      // why was this code here???
-      // let piece = this.board.at(this._square);
-      // if (piece) {
-      //   if (piece.length > 1) piece = piece[0];
-      //   piece.attackFrom(false);
-      // }
-
     }
   }
   get relations() {
@@ -581,13 +644,13 @@ class SquareElement extends HTMLElement {
     this._relations[___DEFENDED_BY___].add(piece);
   }
   rect() {
-    return getBoundingClientRect(this);
+    return this.getBoundingClientRect();
   }
   get piece() {
     let rect = this.rect();
     let x = rect.left + rect.width / 2;
     let y = rect.top + rect.height / 2;
-    return this.board.at(this._square);
+    return this.board.piece_at_square(this._square);
     //return [...document.elementsFromPoint(x, y)];//.filter(el => el.nodeName.includes('img'));
   }
 }
@@ -595,7 +658,7 @@ customElements.define("square-white", class extends SquareElement { });
 customElements.define("square-black", class extends SquareElement { });
 
 let css_linebreak = `\n`;
-let gridrepeat = gap => `repeat(${squarecount}, ${(100 - (squarecount - 1) * gap) / squarecount}%)`;
+let gridrepeat = gap => `repeat(${___SQUARECOUNT___}, ${(100 - (___SQUARECOUNT___ - 1) * gap) / ___SQUARECOUNT___}%)`;
 let cssgrid = gap =>
   `position:absolute;
   width:100%;
@@ -605,12 +668,13 @@ let cssgrid = gap =>
   grid-gap:${gap};
   grid-template-columns:${gridrepeat(gap)};
   grid-template-rows:${gridrepeat(gap)};` + css_linebreak +
-  `  grid-template-areas: ${css_linebreak + ' "' + chunk([...all_board_squares], squarecount).join('"' + css_linebreak + ' "').replace(/,/g, " ") + '"' + css_linebreak};` + css_linebreak +
+  `  grid-template-areas: ${css_linebreak + ' "' + chunk([...all_board_squares], ___SQUARECOUNT___).join('"' + css_linebreak + ' "').replace(/,/g, " ") + '"' + css_linebreak};` + css_linebreak +
   `  grid-auto-flow:row`;
 
 let game_css =
   `<style>:root {
-    display:inline-block;
+    all:initial;
+    display:block;
   }` + css_linebreak +
   `*{
     box-sizing:border-box;
@@ -635,33 +699,51 @@ let game_css =
   `square-black{
     --bgcolor:var(--${___SQUAREBLACK___},#b58863)
   }` + css_linebreak +
-  `#${___LAYER_ID_SQUARES___} square-white,#${___LAYER_ID_SQUARES___} square-black{
+  `#${___LAYER_ID_SQUARES___} square-white,
+   #${___LAYER_ID_SQUARES___} square-black{
     background-color:var(--bgcolor)
   }` + css_linebreak +
 
   //create grid-area for every square name (A1 to H8)
-  `${all_board_squares.map(square => `[at=${square}]{grid-area:${square}}`).join(css_linebreak)}` + css_linebreak +
+  `${all_board_squares.map(square => `[${___AT___}="${square}"]{ grid-area:${square} }`).join(css_linebreak)}` + css_linebreak +
 
   `board-layer{
     ${cssgrid(0)};
     user-select:none
   }` + css_linebreak +
-  `square-white:not([at]),square-black:not([at]){
+
+  `square-white:not([${___AT___}]),square-black:not([${___AT___}]){
     border:1px solid red
   }` + css_linebreak +// extra warning for squares without a piece
-  // `#squares >*[piece="none"]:before{font-size:var(--squarefontsize,0px);z-index:1;display:block;content:attr(at);position:relative;text-align:center;top:40%;color:var(--squarecolor,black);font-family:arial;cursor:not-allowed}` + //cell File/Rank text
-  // `#squares >*{border:1px solid red}` + //cell File/Rank text
-  // `#squares >*{position:relative;border:1px solid red}` + //cell File/Rank text
 
-  `#${___LAYER_ID_DESTINATIONS___} >*[from]{
+  // squarenames A1 - H8  in empty squares
+  `#${___LAYER_ID_SQUARES___} >*[piece="none"]:before{
+    font-size:var(--squarefontsize,0px);
+    z-index:1;
+    display:block;
+    content:attr(at);
+    position:relative;
+    text-align:center;
+    top:40%;
+    color:var(--squarecolor,black);
+    font-family:arial;
+    cursor:not-allowed
+  }` +
+  // `#${___LAYER_ID_SQUARES___} >*{border:1px solid red}` + //cell File/Rank text
+  // `#${___LAYER_ID_SQUARES___} >*{position:relative;border:1px solid red}` + //cell File/Rank text
+
+  `#${___LAYER_ID_DESTINATIONS___} >*[${___ATTR_FROM___}]{
     border:.5vh solid lightgreen
   }` + css_linebreak +//destinations
-  `#${___LAYER_ID_DESTINATIONS___} >*[dragstart]{
+
+  // (dragstart) from location
+  `#${___LAYER_ID_DESTINATIONS___} >*[${___ATTR_DRAGSTART___}]{
     border:.5vh dashed var(--bgcolor);
     background:lightgreen
-  }` + css_linebreak +//(dragstart) from location
-  //possible moves for this piece
-  `#${___LAYER_ID_MOVES___} >*[from]{
+  }` + css_linebreak +
+
+  //possible moves for this piece on this board
+  `#${___LAYER_ID_MOVES___} >*[${___ATTR_FROM___}]{
     width:90%;
     height:90%;
     margin:5%;
@@ -672,10 +754,10 @@ let game_css =
   `.rotated,.rotated img{
     transform:rotate(180deg)
   }` + css_linebreak +
-  `img:not([at]){
+  `img:not([${___AT___}]){
     background:red;
   }` + css_linebreak +//debug
-  `img[at]{
+  `img[${___AT___}]{
     width:100%;
     z-index:11;
   }` + css_linebreak +
@@ -685,25 +767,45 @@ let game_css =
   `<style id=attack_and_defend_dropshadow>` +
   `#${___LAYER_ID_PIECES___}{--swa:drop-shadow(var(--dropsize) 0px 1px darkred);--swd:drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)}` +
   // you can't set :before and :after on IMG elements!
-  /* */ `#${___LAYER_ID_PIECES___} img[attackers][defenders]{filter:var(--swa) var(--swd)}` +
-  /* */ `#${___LAYER_ID_PIECES___} img[attackers]:not([defenders]){filter:var(--swa)}` +
-  /* */ `#${___LAYER_ID_PIECES___} img[defenders]:not([attackers]){filter:var(--swd)}` +
+  /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}][${___DEFENDED_BY___}]{filter:var(--swa) var(--swd)}` +
+  /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){filter:var(--swa)}` +
+  /* */ `#${___LAYER_ID_PIECES___} img[${___DEFENDED_BY___}]:not([${___ATTACKED_BY___}]){filter:var(--swd)}` +
 
-  /* Attacked piece without defenders */ `#${___LAYER_ID_PIECES___} img[attackers]:not([defenders]){` +
+  /* Attacked piece without defenders red on both sides */
+  `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){` +
   `filter:drop-shadow(var(--dropsize) 0px 1px red) drop-shadow(calc(-1*var(--dropsize)) 0px 1px red);` +
   `</style>` +
 
-  `<style id=attack_and_defend_counters>` +
-  /* */ `#${___LAYER_ID_SQUARES___} [attackers]:before{z-index:1;content:attr(defenders_count)"-"attr(attackers_count);text-align:center;display:block;position:relative;width:100%;height:100%}` +
-  /* */ `#${___LAYER_ID_SQUARES___} [defenders]:not([attackers]):after{z-index:1;content:" " attr(defenders_count);text-align:left;display:block;position:relative;width:100%;height:100%}` +
-  `</style>` +
+
+  `<style id=attack_and_defend_counters>
+  #${___LAYER_ID_SQUARES___} [${___DEFENDED_BY___}]:before,
+  #${___LAYER_ID_SQUARES___} [${___ATTACKED_BY___}]:after
+  {
+    z-index:1;
+    display:block;
+    position:relative;
+    width:80%;
+    height:100%;
+    margin:0 auto;
+  }
+  #${___LAYER_ID_SQUARES___} [${___DEFENDED_BY___}]:before{
+    content:attr(${___DEFENDED_BY___}_count);
+    text-align:left;
+    color:green;
+  }
+  #${___LAYER_ID_SQUARES___} [${___ATTACKED_BY___}]:after{
+    content:attr(${___ATTACKED_BY___}_count);
+    text-align:right;
+    color:red;
+  }
+  </style>` +
+
 
   `<style id=css_interactive_board>
-    img[at]{
+    img[${___AT___}]{
       cursor:grab
     }
-  </style>`
-  ;
+  </style>`;
 
 customElements.define("board-layer", class extends HTMLElement {
   static get observedAttributes() {
@@ -750,6 +852,9 @@ customElements.define("board-layer", class extends HTMLElement {
       let element = document.createElement("square-" + squarecolor);
       element.square = square;
       element.setAttribute(___AT___, square);
+      element.onclick = event => {
+        board.dispatch('click', { type: 'square', square });
+      }
       //filterFunc callback (default:true) determines if a square HTML is actually added
       if (filterFunc(element, squareData)) return element;
       else return false;
@@ -769,7 +874,7 @@ customElements.define("board-layer", class extends HTMLElement {
     // squares('E2') square/piece at E2
     // squares('E') all in column E
     // squares('2') all in row 2
-    if (selector != "*") selector = `[at*="${selector}" i]`;
+    if (selector != "*") selector = `[${___AT___}*="${selector}" i]`;
     let elements = [...this.querySelectorAll(selector)];
     // returns:
     // Array of elements
@@ -815,14 +920,21 @@ customElements.define(
       this.layerDestinations.layerHTML(() => true); // shows destinations
 
       //listeners on #board child div
-      this.board.addEventListener("dragenter", event => {
-        let { board, at: square } = piece = event.target;
-        if (square && board.draggingPiece) { //if inside board
-          if (square !== board.draggingPiece.at)
-            board.showmoves(board.draggingPiece.at = square);
-        }
-      });
+      this.board.addEventListener("dragenter", this.showdraggingpiece);
       this.board.addEventListener("dragend", end_drag);
+    }
+
+    showdraggingpiece(event) {
+      let piece = event.target;
+      let { board, at: square } = piece;
+      if (square && board.draggingPiece) { //if inside board
+        if (square !== board.draggingPiece.at) {
+          board.draggingPiece.at = square;
+          board.show_moves_piece_in_square(square);
+          //! TODO: dispatching CustomEvents are async, thus block updating the piece location
+          //setTimeout(() => board.dispatch("dragging", { square }), 0);
+        }
+      }
     }
     setProperty(name, value) {
       this.board.style.setProperty("--" + name, value);
@@ -833,7 +945,6 @@ customElements.define(
       this.board = this.shadowRoot.querySelector("#board");
       this.layerSquares = this.addlayer(___LAYER_ID_SQUARES___); //default 64 empty squares
       this.layerMoves = this.addlayer(___LAYER_ID_MOVES___); //default 64 empty squares
-      this.layer_dragpiece = this.addlayer(___LAYER_ID_DRAGPIECE___);
       this.layerPieces = this.addlayer(___LAYER_ID_PIECES___);
       this.layerPieces.innerHTML = this.initialpieces_lightDOM;
       //destinations above all other layers, so board capture dragenter event
@@ -843,10 +954,10 @@ customElements.define(
       this.layerSquares.layerHTML(); // shows cell numbers for empty fields
       if (this.interactive) this.make_board_interactive();
 
-      let rect = getBoundingClientRect(this.board);
+      let rect = this.board.getBoundingClientRect();
       let boardwidth = rect.width;
       this.setProperty("dropsize", boardwidth / 100 + "px");  // size of dropshadows
-      if (boardwidth > 300) this.setProperty("squarefontsize", boardwidth / 25 + "px");// size of A1..H8 square label
+      if (boardwidth > 300) this.setProperty("squarefontsize", boardwidth / 45 + "px");// size of A1..H8 square label
       //this.setProperty("border", "12px");
 
       if (this.initfen) this.setfen(this.initfen);
@@ -856,8 +967,22 @@ customElements.define(
       layer.id = id;//used by CSS
       return this.board.appendChild(layer);
     }
-    add_board_piece(piece_is, square, layer = this.layerPieces) {
-      if (all_board_squares.includes(square)) layer.add_board_layer_piece(piece_is, square);
+    add_board_piece(
+      piece_is,
+      square,
+      //default layer:
+      layer = this.layerPieces
+    ) {
+      if (all_board_squares.includes(square))
+        layer.add_board_layer_piece(piece_is, square);
+    }
+
+    remove_board_piece(square) {
+      let piece = this.layerPieces.squares(square);
+      if (piece) {
+        piece.remove();
+        this.clear_board_moves();
+      }
     }
 
     clear_board() {
@@ -866,12 +991,15 @@ customElements.define(
       this.layerDestinations.clear_layer();
       this.layerPieces.clear_layer();
     }
-    at(square) {
+    piece_at_square(square) {
       return this.layerPieces.squares(square);
     }
-    showmoves(from_square) {
+    clear_board_moves() {
       this.layerSquares.reset_squares();
       this.layerMoves.clear_squares_with_from_attributes();
+    }
+    show_moves_piece_in_square(from_square) {
+      this.clear_board_moves();
       if (this.interactive) {
         //if (from_square) 
         [...this.layerPieces.children].map(piece => {
@@ -893,13 +1021,13 @@ customElements.define(
           // join everything to one string (the repeat took 1 array position)
           // and split again so we get 64 values
           let piece_is = FEN_translation_Map.get(fen);
-          let square = files[file % squarecount] + ranks[idx % squarecount];
+          let square = files[file % ___SQUARECOUNT___] + ranks[idx % ___SQUARECOUNT___];
           if (piece_is) this.add_board_piece(piece_is, square);
         });
       });
       //once the pieces are on the board, calc underlying layers
       this.layerSquares.layerHTML();
-      this.showmoves();
+      this.show_moves_piece_in_square();
       FEN.innerHTML = fen;
     }
     set fen(fen) {
@@ -913,8 +1041,11 @@ customElements.define(
       let addempties = (empties = empty ? empty : "") => (empty = 0, empties);
       let add = char => (fen += addempties() + char);       // add new FEN character,including counting empties
       [...this.layerSquares.children].map((sq, idx) => {    // loop all squares
-        if (idx && !(idx % squarecount)) add("/");          // if new rank(row) add a /
-        if (sq.piece) add(sq.piece.fen);                    // if piece in this square add fen character
+        if (idx && !(idx % ___SQUARECOUNT___)) add("/");          // if new rank(row) add a /
+        if (sq.piece) {                                     // if piece in this square add fen character
+          if (sq.piece.length) add(this.draggingPiece.fen); //   if dragging over another piece, use draggingPiece FEN
+          else add(sq.piece.fen);                           //   else piece FEN
+        }
         else empty++;                                       // else count empties
       });
       fen += addempties();                                  // add remaining empties
@@ -924,7 +1055,7 @@ customElements.define(
       this.fen = games[nr].fen;
     }
     move(sq1, sq2) {
-      let piece = this.at(sq1);
+      let piece = this.piece_at_square(sq1);
       if (piece) piece.to(sq2);
     }
     rotate() {
@@ -936,12 +1067,9 @@ customElements.define(
     ranks() {
       return ranksAscending;
     }
-    rect() {
-      return getBoundingClientRect(this);
-    }
     square_from_position(x, y) {// pageX, pageY screen coordinates
-      let boardrect = this.rect();//todo memoize
-      let squarewidth = boardrect.width / squarecount;
+      let boardrect = this.getBoundingClientRect();
+      let squarewidth = boardrect.width / ___SQUARECOUNT___;
       let getindex = position => {
         let idx = 1;
         while (position > idx * squarewidth) idx++;
@@ -972,9 +1100,8 @@ customElements.define(
       let idxRank = ranksAscending.indexOf(rank) + 1; // 1 to 8
       let piece_is = "none";
       let playdirection = false;
-      let piece = this.layerPieces && this.at(square);
+      let piece = this.layerPieces && this.piece_at_square(square);
       if (piece.length > 1) {
-        //console.warn(piece[0].is, piece[1].is);
         if (this.draggingPiece) piece = this.draggingPiece;
         else piece = piece[1];
       }
@@ -998,6 +1125,17 @@ customElements.define(
       };
     }
 
+    dispatch(eventname, detail = {}) {
+      detail.name = eventname;
+      this.dispatchEvent(
+        new CustomEvent("chessly-event", {
+          bubbles: true,    // event bubbles UP the DOM
+          composed: true,   // !!! required so Event bubbles through the shadowDOM boundaries
+          detail
+        }));
+      return false;
+    }
+
   }
 );
 
@@ -1006,6 +1144,6 @@ customElements.define(
 // board.fen = "4rrk1/1b2b2p/ppn5/3p1pnq/1P1N2p1/P1PB2P1/5PNP/R1BQ1RK1";
 // board.fen = '8/2R5/5q1k/3Q2N1/3p4/PP3pPP/5n1K/4r3';
 // board.add_board_piece("white-queen", "E4");
-// board.showmoves("D1");
+// board.show_moves_piece_in_square("D1");
 
 console.log('chessly loaded');
