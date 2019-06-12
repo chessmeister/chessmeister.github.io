@@ -1,47 +1,10 @@
-# CheSSly.js - a Custom Element UI experiment on a chess board
+# CheSSly.js - a W3C standard Custom Element
 
-## A single 8300 **Bytes** GZ (23KB minified) file creating chess pieces and board
+## A single 8300 **Bytes** GZ (23KB minified) file creates chess pieces and board
 
-## Demo: https://chessly.github.io
+## for Demo & Documentation see: https://chessly.github.io
 
 ![](https://i.imgur.com/AZmMjfC.jpg)
-
-````html
-<head>
-    <script src="chessly.js"></script>
-</head>
-````
-
-Chessly extends Built In IMG element to display chess pieces: (no external SVG files required)
-
-````html
-<img is="white-king">
-<img is="white-knight">
-<img is="black-rook">
-````
-
-For more information on SVG and Custom Elements see: <a
-    href="https://card-ts.github.io/playingcardts/">https://card-ts.github.io/playingcardts/</a>
-
-
-Chessly creates an autonomous Web Component displaying a full chess board:
-
-````html
-<chessly-board fen="...."></chessly-board>
-````
-
-The board can be configured with CSS variables:</h3>
-
-````css
-chessly-board {
-    --chessly-squarelabel-color: black;// transparent sets squarelabels not visible
-    --chessly-attack-color: darkred;
-    --chessly-defend-color: darkgreen;
-    --chessly-undefended-color: red;
-    --chessly-squarewhite-color: #f0e9c5;
-    --chessly-squareblack-color: #b58863;
-}
-````
 
 # License: Unlicense
 
@@ -68,4 +31,4 @@ https://choosealicense.com/licenses/unlicense/
   React - **50KB**!! GZipped - interaction: move pieces , no chessrules
 
 * Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-06-10 14:07 
+Published: 2019-06-12 16:50 
