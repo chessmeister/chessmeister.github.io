@@ -20,6 +20,24 @@ let chunk = (
     , r.concat(arr.length ? chunk(arr, size) : [])// [] is concatted last!
   );
 
+class ChesslyEvent extends Event {//! buggy in Edge and Safari! requires changing prototype workaround
+  constructor(typeArg, eventInit) {
+    super(typeArg, eventInit);
+    this.newState = eventInit.newState;
+  }
+}
+
+// myElem.dispatchEvent(new ChesslyEvent(
+//   "state-change",
+//   {
+//     newState: {
+
+//     }
+//   }
+// ));
+
+
+
 // ======================================================== Drag events
 /**
  * start drag administration after dragstart or touchmove (mobile)
@@ -82,6 +100,8 @@ let end_drag = event => {
 
 // ======================================================== App declaration
 const ___SQUARECOUNT___ = 8;//chess or checkers or any board width/height
+
+//!for readablity constants can also be used hardcoded in CSS declarations (way below)
 
 //configurable
 const ___WHITE___ = "white";
@@ -281,6 +301,7 @@ function SVG_chesspiece({
   return svg.replace(/</g, "%3C").replace(/>/g, "%3E").replace(/#/g, "%23");
 }
 
+// Create all chesspieces as Custom Element extended from IMG
 [
   ___WHITE___,
   ___BLACK___
@@ -310,7 +331,7 @@ function SVG_chesspiece({
           super();
           this.setAttribute(___ELEMENT_IS___, piece_is); // required to set explicitly for .createElement usage
         }
-        setIMGsrc() {
+        setIMGsrc() {//chesspiece element:set src in connected or attributechange callback
           //extract attributes to be passed to SVG creation function
           let parameters = attributes_to_parametersObject(
             this,
@@ -323,9 +344,9 @@ function SVG_chesspiece({
           }
           this.src = SVG_chesspiece(parameters);
         }
-        show_piece_moves(
+        show_piece_moves(//chesspiece element:show my moves on a board-layer
           attack_from_square,
-          layers = [this.board.layerDestinations]
+          layers = [this.board.layerDestinations]//for now second param is always set
         ) {
           this.calculate_piece_moves().piece_destinations// array [...,"B5","","A6X",...] with piece destinations and attack X info
             .filter(to_square => to_square.length == 2 || to_square[2] == "X")// empty or attacking square
@@ -334,7 +355,7 @@ function SVG_chesspiece({
                 let { piece, piece_is, square_element } = this.board.squareData(squarenameUpperCase(to_square));
                 if (to_square[2] == "X") piece.attackFrom(this.at); // set image outline
                 //else empty square piece can move to
-                layers.map(layer => layer.from_to(attack_from_square, to_square));
+                layers.map(layer => layer.mark_attack_from_to_square(attack_from_square, to_square));
               }
             })
         }
@@ -365,7 +386,7 @@ function SVG_chesspiece({
               let square = board.square_from_position(pageX, pageY);
               if (!board.draggingPiece) start_drag(event);
               //if dragged piece to ANOTHER square
-              //todo merge with board.showdraggingpiece()
+              //todo merge with board._showdraggingpiece()
               if (!board.draggingPiece || square != board.draggingPiece.at) {
                 board.draggingPiece = piece;
                 event.target.at = square;
@@ -387,7 +408,7 @@ function SVG_chesspiece({
         connectedCallback() {// piece IMG
           this.setIMGsrc();
           this.board = this.getRootNode().host;
-          if (this.board && this.board.interactive) this.make_piece_interactive();
+          if (this.board && this.board.is_interactive) this.make_piece_interactive();
         }
         attributeChangedCallback(name, oldValue, newValue) {
           if (name == ___AT___) this._at_square = squarenameUpperCase(newValue);
@@ -429,7 +450,7 @@ function SVG_chesspiece({
         }
         to(square) {
           let from = this.board.at(this.at).rect();//destructure!
-          let to = this.board.at(square).rect;
+          let to = this.board.layerSquares.squares(square).rect;
           this.animate(
             [
               {
@@ -437,8 +458,23 @@ function SVG_chesspiece({
               },
               { transform: `translate(${to.x - from.x}px,${to.y - from.y}px)` }
             ],
-            { duration: 1500 }
-          ).onfinish = () => (this.at = square);
+            { duration: 500 }
+          ).onfinish = () => {
+            this.at = square;
+            this.board.dispatch("moved");
+          }
+        }
+        data() {
+          return {
+            square: this.at,
+            piece_is: this.is,
+            fen: this.fen,
+            color: this.color,
+            destination: this.destinations,
+            squareData: this.board.squareData(this.at),
+            [___ATTACKED_BY___]: this.getAttribute(___ATTACKED_BY___),
+            [___DEFENDED_BY___]: this.getAttribute(___DEFENDED_BY___)
+          }
         }
         calculate_piece_moves(square = this.at) {
           let board = this.board;
@@ -576,6 +612,7 @@ function SVG_chesspiece({
           }
           [piece_is.split`-`[1]]().filter(square => square);
 
+          this.destinations = piece_destinations;
           return {
             piece_destinations
             //inbetweenPieces
@@ -605,6 +642,9 @@ class SquareElement extends HTMLElement {
   }
   get at() {
     return this.square;//double because dragenter (img or square) wants .at
+  }
+  get rect() {
+    return this.getBoundingClientRect();
   }
   reset_square() {
     if (this.board) {
@@ -674,15 +714,8 @@ class SquareElement extends HTMLElement {
   set set_defended_By(piece) {
     this._relations[___DEFENDED_BY___].add(piece);
   }
-  rect() {
-    return this.getBoundingClientRect();
-  }
   get piece() {
-    let rect = this.rect();
-    let x = rect.left + rect.width / 2;
-    let y = rect.top + rect.height / 2;
     return this.board.piece_at_square(this._square);
-    //return [...document.elementsFromPoint(x, y)];//.filter(el => el.nodeName.includes('img'));
   }
 }
 customElements.define("square-white", class extends SquareElement { });
@@ -839,6 +872,16 @@ let game_css =
   </style>`;
 
 customElements.define("board-layer", class extends HTMLElement {
+  // Methods:
+  // clear_layer()
+  // mark_attack_from_to_square(from_square, to_square)
+  // clear_squares_with_from_attributes()
+  // layerHTML(
+  // reset_squares()
+  // set_square_relations()
+  // squares(selector = "*")
+  // add_board_layer_piece(piece_is, square, append = true)
+
   static get observedAttributes() {
     return [];
   }
@@ -849,15 +892,15 @@ customElements.define("board-layer", class extends HTMLElement {
   connectedCallback() {
   }
   clear_layer() {
-    console.warn("clear", this.id);
     this.innerHTML = "";
     this.clear_squares_with_from_attributes();
   }
-  from_to(from_square, to_square) {
+  mark_attack_from_to_square(from_square, to_square) {
     let square = squarenameUpperCase(to_square);
-    let square_element = this.squares(square);
+    let piece_or_square_element = this.squares(square);
     this._squares_marked_from.add(square);
-    if (square_element) square_element.setAttribute(___ATTR_FROM___, from_square);
+    if (piece_or_square_element)
+      piece_or_square_element.setAttribute(___ATTR_FROM___, from_square);
   }
   clear_squares_with_from_attributes() {
     if (this.children.length) {
@@ -907,7 +950,7 @@ customElements.define("board-layer", class extends HTMLElement {
     // squares('E2') square/piece at E2
     // squares('E') all in column E
     // squares('2') all in row 2
-    if (selector != "*") selector = `[${___AT___}*="${selector}" i]`;
+    if (selector != "*" && selector.length < 3) selector = `[${___AT___}*="${selector}" i]`;
     let elements = [...this.querySelectorAll(selector)];
     // returns:
     // Array of elements
@@ -941,12 +984,12 @@ customElements.define(
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
-      this.initialpieces_lightDOM = this.innerHTML;
-      this.initfen = false;
+      this._initialpieces_in_lightDOM = this.innerHTML;
+      this._initfen = false;
     }
 
     make_board_interactive(interactive = true) {
-      this.interactive = interactive;
+      this.is_interactive = interactive;
       window.bb = this;
 
       this.shadowRoot.querySelector('[id="css_interactive_board"]').disabled = !interactive;
@@ -955,11 +998,11 @@ customElements.define(
       this.layerDestinations.layerHTML(() => true); // shows destinations
 
       //listeners on #board child div
-      this.board.addEventListener("dragenter", this.showdraggingpiece);
+      this.board.addEventListener("dragenter", this._showdraggingpiece);
       this.board.addEventListener("dragend", end_drag);
     }
 
-    showdraggingpiece(event) {
+    _showdraggingpiece(event) {
       let piece = event.target;
       let { board, at: square } = piece;
       if (square && board.draggingPiece) { //if inside board
@@ -981,13 +1024,14 @@ customElements.define(
       this.layerSquares = this.addlayer(___LAYER_ID_SQUARES___); //default 64 empty squares
       this.layerMoves = this.addlayer(___LAYER_ID_MOVES___); //default 64 empty squares
       this.layerPieces = this.addlayer(___LAYER_ID_PIECES___);
-      this.layerPieces.innerHTML = this.initialpieces_lightDOM;
+      this.layerPieces.innerHTML = this._initialpieces_in_lightDOM;
+      delete this._initialpieces_in_lightDOM;
       //destinations above all other layers, so board capture dragenter event
       this.layerDestinations = this.addlayer(___LAYER_ID_DESTINATIONS___); //default 64 empty squares
-      this.interactive = !this.hasAttribute(___ATTR_STATIC___);
+      this.is_interactive = !this.hasAttribute(___ATTR_STATIC___);
       //once the pieces are on the board, calc underlying layers
       this.layerSquares.layerHTML(); // shows cell numbers for empty fields
-      if (this.interactive) this.make_board_interactive();
+      if (this.is_interactive) this.make_board_interactive();
 
       let rect = this.board.getBoundingClientRect();
       let boardwidth = rect.width;
@@ -995,7 +1039,7 @@ customElements.define(
       if (boardwidth > 300) this.setProperty("squarefontsize", boardwidth / 45 + "px");// size of A1..H8 square label
       //this.setProperty("border", "12px");
 
-      if (this.initfen) this.setfen(this.initfen);
+      if (this._initfen) this.setfen(this._initfen);
     }
     addlayer(id) {
       let layer = document.createElement("board-layer");
@@ -1008,8 +1052,10 @@ customElements.define(
       //default layer:
       layer = this.layerPieces
     ) {
-      if (all_board_squares.includes(square))
+      if (all_board_squares.includes(square)) {
+        if (piece_is.length < 3) piece_is = FEN_translation_Map(piece_is);
         layer.add_board_layer_piece(piece_is, square);
+      }
     }
 
     remove_board_piece(square) {
@@ -1029,6 +1075,10 @@ customElements.define(
     piece_at_square(square) {
       return this.layerPieces.squares(square);
     }
+    at(square) {
+      return this.piece_at_square(square);
+    }
+
     clear_board_moves() {
       this.layerSquares.reset_squares();
       this.layerMoves.clear_squares_with_from_attributes();
@@ -1036,7 +1086,7 @@ customElements.define(
     }
     show_moves_piece_in_square(from_square) {
       this.clear_board_moves();
-      if (this.interactive) {
+      if (this.is_interactive) {
         //if (from_square) 
         [...this.layerPieces.children].map(piece => {
           piece.show_piece_moves(from_square, [this.layerMoves]);
@@ -1046,7 +1096,7 @@ customElements.define(
       }
     }
     setfen(fen) {
-      this.initfen = false;
+      delete this._initfen;
       this.layerPieces.clear_layer();
       fen.split("/").map((rank, idx) => {
         rank.split``.map(
@@ -1072,7 +1122,7 @@ customElements.define(
       this.setAttribute(___ATTR_FEN___, fen);
     }
     get fen() {
-      if (this.initfen) return this.initfen;
+      if (this._initfen) return this._initfen;
       //todo move fen to layer for multiple pieces layer
       let fen = "";
       let empty = 0;
@@ -1081,7 +1131,7 @@ customElements.define(
       [...this.layerSquares.children].map((sq, idx) => {    // loop all squares
         if (idx && !(idx % ___SQUARECOUNT___)) add("/");          // if new rank(row) add a /
         if (sq.piece) {                                     // if piece in this square add fen character
-          if (sq.piece.length) add(this.draggingPiece.fen); //   if dragging over another piece, use draggingPiece FEN
+          if (sq.piece.length && this.draggingPiece) add(this.draggingPiece.fen); //   if dragging over another piece, use draggingPiece FEN
           else add(sq.piece.fen);                           //   else piece FEN
         }
         else empty++;                                       // else count empties
@@ -1092,9 +1142,40 @@ customElements.define(
     game(nr) {
       this.fen = games[nr].fen;
     }
+    moves(square) {
+      let piece = this.layerPieces.squares(square);
+      if (piece)
+        return piece.calculate_piece_moves().piece_destinations;
+      else
+        return [];
+    }
+    piece(
+      fen_is = "K",//just any default
+      selector = false// optional custom selector string
+    ) {
+      if (fen_is == '*')
+        selector = '*';
+      else
+        if (fen_is.length < 2) fen_is = FEN_translation_Map.get(fen_is);
+      if (!selector) {
+        if (fen_is.includes("-"))
+          selector = `[is="${fen_is}"]`;
+        else
+          selector = fen_is = `[is*="${fen_is}"]`;
+      }
+      return this.layerPieces.squares(selector);
+    }
     move(sq1, sq2) {
-      let piece = this.piece_at_square(sq1);
+      let piece;
+      if (sq1.length === 3) {
+        let piece = FEN_translation_Map.get(sq1[0]);
+        //todo where is this piece on the board?
+        sq2 = sq1.slice(1);
+      } else {
+        piece = this.piece_at_square(sq1);
+      }
       if (piece) piece.to(sq2);
+      return this;//chaining
     }
     rotate() {
       this.board.classList.toggle("rotated");
@@ -1121,7 +1202,7 @@ customElements.define(
     attributeChangedCallback(name, oldValue, newValue) {
       if (name == ___ATTR_FEN___) {
         if (this.board) this.setfen(newValue);
-        else this.initfen = newValue;
+        else this._initfen = newValue;
       } else if (name == ___ATTR_STATIC___) {
         if (oldValue && newValue === "true")
           this.make_board_interactive();
@@ -1169,6 +1250,10 @@ customElements.define(
           detail
         }));
       return false;
+    }
+
+    start(fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w") {
+      this.fen = fen;
     }
 
   }
