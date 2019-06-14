@@ -1,6 +1,6 @@
 # CheSSly.js - a W3C standard Custom Element
 
-## A single 8300 **Bytes** GZ (23KB minified) file creates chess pieces and board
+## A single 9 KB GZipped (27 KB minified) file creates chess pieces and board
 
 ## for Demo & Documentation see: https://chessly.github.io
 
@@ -30,5 +30,7 @@ https://choosealicense.com/licenses/unlicense/
 * https://rexxars.github.io/react-chess/  
   React - **50KB**!! GZipped - interaction: move pieces , no chessrules
 
+* Or go bigger... 500 KB React version : https://chessboardjsx.com/
+
 * Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-06-12 16:50 
+Published: 2019-06-14 14:09 
