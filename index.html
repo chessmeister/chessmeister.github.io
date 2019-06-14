@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Chessly</title>
     <script defer src="chessly.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script>
     <style id=theme_greenwhite>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -128,19 +129,22 @@
 </head>
 
 <body class="greencloth">
+    <a name="Chessly"></a>
     <h1>CheSSly (beta) - Chessboard and Chesspieces</h1>
-    <h3>using W3C standard Custom Elements</h3>
-    <p>
+    <h3>'Just A Board' using W3C standard Custom Elements</h3>
+    <p id=Links>
+        <a href="#Chessly">Chessly</a>
+        -
         <a href="#documentation">Documentation</a>
         -
-        <a href="#designer">Chessboard designer</a>
+        <a href="#designer">Designer</a>
         -
-        <a href="#challenges">Chess Challenges</a>
+        <a href="#challenges">Challenges</a>
         -
         <a href="https://github.com/chessly/chessly.github.io">GitHub</a>
         -
-        from the same maker:
-        <a href="https://card-ts.github.io/playingcardts/">playingcardts</a>
+        from the same maker
+        <a href="https://card-ts.github.io/playingcardts/">PlayingCardts</a>
     </p>
 
 
@@ -158,9 +162,8 @@
             }
         </style>
         <h3>
-            Chessly creates chesspieces and a fully interactive chessboard.<br>
-            Chessly it is <b>not</b> a computer chessplaying opponent... implement your own using <a
-                href="">chess.js</a>
+            Chessly lets you position Chesspieces, Chessly is <b>NOT</b> a computer chessplaying
+            opponent...
         </h3>
 
         <chessly-board id=ChesslyDemo fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w">
@@ -168,6 +171,8 @@
     </section>
 
     <a name=documentation></a>
+    <p id=Links>
+    </p>
     <section id="Documentation">
         <h2>chessly.js - Custom Element documentation</h2>
         <pre class="htmlcode">
@@ -175,7 +180,7 @@
     &nbsp;&nbsp;&lt;script <b>src="chessly.js"</b>>&lt;/script>
     &lt;/head>
             </pre>
-        <p>This single (8300 Bytes GZip) file creates <a
+        <p>This single (9300 Bytes GZip) file creates <a
                 href="https://developers.google.com/web/fundamentals/web-components/customelements">Custom
                 Elements:</a></p>
         <h3>Extended Built-In Custom Element</h3>
@@ -268,7 +273,9 @@
     board.fen = "..fenstring.."; // sets board fen
     board.piece_at_square("F3"); // gets IMG element at F3 or False
     board.add_board_piece( "white-rook" , "F3" );
-    board.remove_board_piece( "F3" )
+    board.remove_board_piece( "F3" );
+    board.rotate();
+
     //for more see source code
         </pre>
         <h3>Events</h3>
@@ -287,6 +294,8 @@
 </pre>
     </section>
     <a name=challenges></a>
+    <p id=Links>
+    </p>
     <section id="Chess Challenge">
         <style>
             [result]::after {
@@ -338,7 +347,7 @@
             <span id=Hint>hint:</span>
         </p>
         <div class=grid3column>
-            <div id=Kasparov><img
+            <div id=Kasparov><img loading="lazy"
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
                 <chessly-board static id=Game0 fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1"
                     move="PG7" hint="Promote the pawn the black king can not capture">
@@ -353,7 +362,8 @@
             <div>
                 <chessly-board id=ChessChallenge> </chessly-board> <!-- -->
             </div>
-            <div id=DeepBlue><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
+            <div id=DeepBlue><img loading="lazy"
+                    src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
                 <chessly-board static id=Game1 fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w"
                     title="Game 1997 #2" move="RA6" hint="Attack the black queen">
                 </chessly-board>
@@ -366,6 +376,8 @@
         </div>
     </section>
     <a name=designer></a>
+    <p id=Links>
+    </p>
     <section id="DesignChessboard">
         <style>
             #DesignChessboard img {
@@ -423,12 +435,15 @@
         let piecebuttons = _ => document.querySelectorAll('#DesignChessboard img');
         var urlParams = new URLSearchParams(window.location.search);
         savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
+
         window.onload = event => {
             challengeboard = Game0;
             ChessChallenge.fen = challengeboard.fen;
             challengeboard.setAttribute("current", "true");
             Hint.setAttribute("hint", challengeboard.getAttribute("hint"));
             console.log('chessly demo page loaded');
+
+            [...Links].map(link => link.innerHTML = Links[0].innerHTML);
 
             ChessDesign.addEventListener("dragend", event => {
                 console.warn("draggend on Custom Element", this);
@@ -499,9 +514,26 @@
             //show body after all is done... FireFox does it different
             document.body.style.visibility = 'initial';
 
+            //play chess on demo board
+            ChesslyDemo.start(urlParams.get(___FEN___));
+            function playChess(board = ChesslyDemo) {
+                let chess = new Chess();
+                let ChesslyDemo_playing = setInterval(() => {
+                    if (chess.game_over()) {
+                        clearInterval(ChesslyDemo_playing);
+                        console.log(chess.pgn());
+                    } else {
+                        var moves = chess.moves();
+                        var move = moves[Math.floor(Math.random() * moves.length)];
+                        chess.move(move);
+                        board.fen = chess.fen();
+                    }
+                }, 500);
+            }
+
         }
     </script>
 </body>
 
 </html>
-Published: 2019-06-12 16:50 
+Published: 2019-06-14 14:09 
