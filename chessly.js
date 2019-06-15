@@ -92,7 +92,7 @@ let clear_drag = event => {
  */
 let end_drag = event => {
   let { board } = event.target;
-  let piece = board.piece_at_square(event.target.at);    // pieces at square
+  let piece = board.piece(event.target.at);    // pieces at square
 
   if (board && board.draggingFromsquare) {//dragging piece in same board
     board.dispatch('dragged', {
@@ -489,7 +489,7 @@ function SVG_chesspiece({
           return this.getBoundingClientRect();
         }
         to(square) {
-          let from = this.board.at(this.at).rect();//destructure!
+          let from = this.board.piece(this.at).rect();//destructure!
           let to = this.board.layerSquares.squares(square).rect;
           this.animate(
             [
@@ -818,7 +818,7 @@ class SquareElement extends HTMLElement {
     this._relations[___DEFENDED_BY___].add(piece);
   }
   get piece() {
-    return this.board.piece_at_square(this._square);
+    return this.board.piece(this._square);
   }
 }
 customElements.define("square-white", class extends SquareElement { });
@@ -1175,12 +1175,6 @@ customElements.define(
       this.layerDestinations.clear_layer();
       this.layerPieces.clear_layer();
     }
-    piece_at_square(square) {
-      return this.layerPieces.squares(square);
-    }
-    at(square) {
-      return this.piece_at_square(square);
-    }
 
     clear_board_moves() {
       this.layerSquares.reset_squares();
@@ -1293,7 +1287,7 @@ customElements.define(
         //todo where is this piece on the board?
         sq2 = sq1.slice(1);
       } else {
-        piece = this.piece_at_square(sq1);
+        piece = this.piece(sq1);
       }
       if (piece) piece.to(sq2);
       return this;//chaining
@@ -1340,7 +1334,7 @@ customElements.define(
       let idxRank = ranksAscending.indexOf(rank) + 1; // 1 to 8
       let piece_is = "none";
       let playdirection = false;
-      let piece = this.layerPieces && this.piece_at_square(square);
+      let piece = this.layerPieces && this.piece(square);
       if (piece.length > 1) {
         if (this.draggingPiece) piece = this.draggingPiece;
         else piece = piece[1];
