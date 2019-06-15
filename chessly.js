@@ -20,6 +20,26 @@ let chunk = (
     , r.concat(arr.length ? chunk(arr, size) : [])// [] is concatted last!
   );
 
+class ChessPieceDestinations extends Array {
+  constructor(board) {
+    super();
+    this.board = board;
+  }
+  _filter(char = ___SQUARE_ATTACK_MARKER___) {
+    return this.filter(location => location.length > 2 && location[2] === char)
+  }
+  get attacks() {
+    return this._filter(___SQUARE_ATTACK_MARKER___);
+  }
+  get defends() {
+    return this._filter(___SQUARE_DEFEND_MARKER___);
+  }
+  pieces() {
+    return this.map(square => this.board.piece(squarenameUpperCase(square)));
+  }
+
+}
+
 class ChesslyEvent extends Event {//! buggy in Edge and Safari! requires changing prototype workaround
   constructor(typeArg, eventInit) {
     super(typeArg, eventInit);
@@ -47,7 +67,7 @@ let start_drag = event => {
   let piece = event.target;
   let { board, at: square } = piece;
   //mark the locations this piece can goto
-  piece.show_moves_on_Moves_and_Destinations_layers(square);
+  piece._show_moves_on_Moves_and_Destinations_layers(square);
   //mark the start location
   board.draggingFromsquare = board.layerDestinations.squares(piece.at);
   board.draggingFromsquare.setAttribute(___ATTR_DRAGSTART___, piece.is);
@@ -118,6 +138,12 @@ const ___PIECE_KING___ = "king";
 //constants
 const ___ATTACKED_BY___ = "attackers";
 const ___DEFENDED_BY___ = "defenders";
+
+const ___SQUARE_POTENTIAL_ATTACK_MARKER___ = "x";
+const ___SQUARE_ATTACK_MARKER___ = "X";
+const ___SQUARE_POTENTIAL_DEFEND_MARKER___ = "z";
+const ___SQUARE_DEFEND_MARKER___ = "Z";
+
 const ___LAYER_ID_SQUARES___ = "all_board_squares";
 const ___LAYER_ID_MOVES___ = "allowed_piece_moves";
 const ___LAYER_ID_PIECES___ = "pieces_on_board";
@@ -126,6 +152,7 @@ const ___PROTECTED_BY___ = "protectors";
 const ___PROTECTED_BY_WHITE___ = ___PROTECTED_BY___ + ___WHITE___;
 const ___PROTECTED_BY_BLACK___ = ___PROTECTED_BY___ + ___BLACK___;
 const ___SQUARE_RELATIONS___ = "relations";
+
 const ___ATTR_PIECE___ = "piece";
 const ___ATTR_FROM___ = "from";
 const ___ATTR_FEN___ = "fen";
@@ -232,20 +259,21 @@ let make_Object_properties_from_attributes = (
   );
 
 /**
- * returns SVG code for chess piece (is:'white-king')
- * @param {*}
+ * returns SVG string for chess piece 
+ * @param {*} {is:'white-king'}
  */
 function SVG_chesspiece({
   is, // white-pawn, black-rook etc
   //default optional settings:
-  outline = "#666", // red outline
-  detailcolor = "#888",// small lines in pawn and rook, circles in king
+  outline = "#666",       // red outline
+  detailcolor = "#888",   // small lines in pawn and rook, circles in king
   //width and height
-  size = 900,           // 993    larger value is smaller piece
-  translate = "20,0",    // To center piece in square  org:50,0
+  size = 900,             // larger value is smaller piece org:993 
+  translate = "20,0",     // To center piece in square  org:50,0
   circlesize = 50,
+  // 0 = white , 1 = black
   piececolors = [["eee", "999"], ["111", "888"]], // white,lightgrey  black,drakgrey
-  fillcolors = ["gold", "silver"] // fill queen crown
+  fillcolors = ["gold", "silver"]                 // fill queen crown-circles and other details
 }) {
   let color = is.includes(___WHITE___) ? 0 : 1;
   let stopcolors = piececolors[color];
@@ -296,9 +324,13 @@ function SVG_chesspiece({
         circle(330, 743, circlesize / 2) +
         circle(440, 737, circlesize / 2) +
         circle(550, 743, circlesize / 2)
-    }[is.split("-")[1]]}</g></svg>`;//get piece type as object key
+    }[is.split("-")[1]]}</g></svg>`;//get piece type as object key: pawn,rook,...
 
-  return svg.replace(/</g, "%3C").replace(/>/g, "%3E").replace(/#/g, "%23");
+  //note: escape() function can be used but is officialy deprecated
+  return svg
+    .replace(/</g, "%3C")
+    .replace(/>/g, "%3E")
+    .replace(/#/g, "%23");
 }
 
 // Create all chesspieces as Custom Element extended from IMG
@@ -316,11 +348,13 @@ function SVG_chesspiece({
   ].map(piecename => {
     let piece_is = color + "-" + piecename; // white-pawn, white-rook, ...
 
+    //register Forsyth-Edward-Notations
     let fen = piecename == ___PIECE_KNIGHT___ ? "n" : piecename[0]; // prnbqk
     if (color == ___WHITE___) fen = fen.toUpperCase();              // white : PRNBQK
     FEN_translation_Map.set(piece_is, fen);                         // white-king -> K
     FEN_translation_Map.set(fen, piece_is);                         // K -> white-king
 
+    //define Custom Element extending IMG to use: <img is=white-pawn />
     customElements.define(
       piece_is,
       class extends HTMLImageElement {
@@ -331,37 +365,48 @@ function SVG_chesspiece({
           super();
           this.setAttribute(___ELEMENT_IS___, piece_is); // required to set explicitly for .createElement usage
         }
-        setIMGsrc() {//chesspiece element:set src in connected or attributechange callback
+        connectedCallback() {// piece IMG
+          this._set_IMG_src();
+          this.board = this.getRootNode().host;
+          if (this.board && this.board.is_interactive) this.make_piece_interactive();
+          //piece public properties
+          let pieceArray = _ => new ChessPieceDestinations(this.board);
+          this.destinations = pieceArray();
+          this.defended_from = pieceArray();
+          this.attacked_from = pieceArray();
+        }
+
+        _set_IMG_src() {//chesspiece element:set src in connected or attributechange callback
           //extract attributes to be passed to SVG creation function
           let parameters = attributes_to_parametersObject(
             this,
             {},// optional default settings
             this.constructor.observedAttributes// todo test if attributenames is better?
           );
-          if (this.board) {
-            //todo get CSS property value from board to decorate chess piece
+          if (this.board) {//todo get CSS property value from board to decorate chess piece
             //parameters.piececolors = [["eee", "999"], ["111", "888"]]; // white,lightgrey  black,drakgrey
           }
           this.src = SVG_chesspiece(parameters);
         }
-        show_piece_moves(//chesspiece element:show my moves on a board-layer
+        _show_piece_moves(//chesspiece element:show my moves on a board-layer
           attack_from_square,
           layers = [this.board.layerDestinations]//for now second param is always set
         ) {
           this.calculate_piece_moves().piece_destinations// array [...,"B5","","A6X",...] with piece destinations and attack X info
-            .filter(to_square => to_square.length == 2 || to_square[2] == "X")// empty or attacking square
+            .filter(to_square => to_square.length == 2 || to_square[2] == ___SQUARE_ATTACK_MARKER___)// empty or attacking square
             .map(to_square => {
               if (attack_from_square == this.at) {
                 let { piece, piece_is, square_element } = this.board.squareData(squarenameUpperCase(to_square));
-                if (to_square[2] == "X") piece.attackFrom(this.at); // set image outline
+                if (to_square[2] == ___SQUARE_ATTACK_MARKER___) piece.attackFrom(this.at); // set image outline
                 //else empty square piece can move to
                 layers.map(layer => layer.mark_attack_from_to_square(attack_from_square, to_square));
               }
             })
         }
-        show_moves_on_Moves_and_Destinations_layers(square) {
-          this.show_piece_moves(square, [this.board.layerMoves]);
-          this.show_piece_moves(square, [this.board.layerDestinations]);
+        // update 2 existing board-layers
+        _show_moves_on_Moves_and_Destinations_layers(square) {
+          this._show_piece_moves(square, [this.board.layerMoves]);
+          this._show_piece_moves(square, [this.board.layerDestinations]);
         }
 
         make_piece_interactive() {
@@ -369,14 +414,14 @@ function SVG_chesspiece({
           this.addEventListener("dragstart", event => {
             let piece = event.target;
             piece.board.draggingPiece = piece;
-            piece.show_moves_on_Moves_and_Destinations_layers(piece.at);
+            piece._show_moves_on_Moves_and_Destinations_layers(piece.at);
             start_drag(event);
           });
           //mouseover
           this.addEventListener("mouseover", event => {
             let piece = event.target;
             if (!piece.board.draggingPiece)
-              piece.show_moves_on_Moves_and_Destinations_layers(piece.at);
+              piece._show_moves_on_Moves_and_Destinations_layers(piece.at);
           });
           this.addEventListener("touchmove", event => {
             if (event.target.board) {
@@ -405,14 +450,9 @@ function SVG_chesspiece({
           });
         }
 
-        connectedCallback() {// piece IMG
-          this.setIMGsrc();
-          this.board = this.getRootNode().host;
-          if (this.board && this.board.is_interactive) this.make_piece_interactive();
-        }
         attributeChangedCallback(name, oldValue, newValue) {
           if (name == ___AT___) this._at_square = squarenameUpperCase(newValue);
-          this.setIMGsrc();
+          this._set_IMG_src();
         }
         get at() {
           return this._at_square;
@@ -470,124 +510,176 @@ function SVG_chesspiece({
             piece_is: this.is,
             fen: this.fen,
             color: this.color,
-            destination: this.destinations,
+            destinations: this.destinations,
+            attacked_from: this.attacked_from,
+            defended_from: this.defended_from,
             squareData: this.board.squareData(this.at),
             [___ATTACKED_BY___]: this.getAttribute(___ATTACKED_BY___),
             [___DEFENDED_BY___]: this.getAttribute(___DEFENDED_BY___)
           }
         }
         calculate_piece_moves(square = this.at) {
-          let board = this.board;
-          let squareData = board.squareData(square);
-          let { idxFile, idxRank, piece_is, fen, playdirection } = squareData;
-          let startFile = idxFile;
-          let startRank = idxRank;
+          let _pieceboard = this.board;
+          let _piece_squareData = _pieceboard.squareData(square);
+          let { idxFile, idxRank, piece_is, fen, playdirection } = _piece_squareData;
+          let _startFile = idxFile;
+          let _startRank = idxRank;
           let idxBorder = ___SQUARECOUNT___ + 1;  // playingfield is from 1 to squarecount
-          let reachableSquares = [];
-          let attackMode = true;            // default , pawn sets attackmode to false for forward moves
+          let _reachableSquares = new ChessPieceDestinations(_pieceboard);
+          let _attackMode = true;                  // default , pawn sets attackmode to false for forward moves
           //let inbetweenPieces = [];
-          let afterBlockingPiece = false;   // detect how far we can move
-          let checksquareData = false;
+          let _isAfterBlockingPiece = false;      // detect how far we can move
+          let _checksquareData = false;           // save some CPU cycles, don't declare in a loop
+
+          this.destinations.length = 0;
+          this.attacked_from.length = 0;
+          this.defended_from.length = 0;
+
           let reset = _ => {
-            afterBlockingPiece = false;
-            idxFile = startFile; // reset idxFile to current square
-            idxRank = startRank; // reset idxRank
+            _isAfterBlockingPiece = false;
+            idxFile = _startFile;                  // reset idxFile to current square
+            idxRank = _startRank;                  // reset idxRank
           };
-          let recordDestination = (sqData, char, att_def_type = false) => {
-            let checksquare = sqData.square;
-            if (afterBlockingPiece) {
-              checksquare += char; //square can't be reach directly
+          let recordDestination = (
+            _sqData,
+            _xz_char,                                   // attack x/X or defend z/Z
+            _attr_def_type = false
+          ) => {
+            if (_isAfterBlockingPiece) {
+              _sqData.square += _xz_char;                // square can't be reach directly: x z
             } else {
-              sqData.square_element[att_def_type] = square + fen;
-              checksquare += char.toUpperCase();
+              _sqData.square_element[_attr_def_type] = square + fen;
+              _sqData.square += _xz_char.toUpperCase();  // direct attack X or defend Z
             }
-            return checksquare;
+            return _sqData.square;
           };
-          let attack_or_defend = (checksquare, noBlockingCheck) => {//call by default for all pieces AND pawn
-            checksquareData = board.squareData(checksquare);
-            if (checksquareData.piece) {
-              if ( /* owncolor */ playdirection == checksquareData.playdirection) {
-                checksquare = recordDestination(checksquareData, "z", "set_defended_By");
+          let attack_or_defend = (  //call by default for all pieces AND pawn
+            _checksquare,
+            _noBlockingCheck
+          ) => {
+            _checksquareData = _pieceboard.squareData(_checksquare);
+            if (_checksquareData.piece) {
+              if ( /* owncolor */ playdirection == _checksquareData.playdirection) {
+                _checksquare = recordDestination(
+                  _checksquareData,
+                  ___SQUARE_POTENTIAL_DEFEND_MARKER___,
+                  "set_defended_By"
+                );
+                this.defended_from.push(_checksquare);
               } else {
-                if (attackMode) {//pawns forward moves can't attack
-                  checksquare = recordDestination(checksquareData, "x", "attacked_By");
+                if (_attackMode) {//pawns forward moves can't attack
+                  _checksquare = recordDestination(
+                    _checksquareData,
+                    ___SQUARE_POTENTIAL_ATTACK_MARKER___,
+                    "attacked_By"
+                  );
                 }
+                this.attacked_from.push(_checksquare);
               }
-              if (noBlockingCheck) checksquare = checksquare.toUpperCase();
+              if (_noBlockingCheck) _checksquare = _checksquare.toUpperCase();
               //inbetweenPieces.push(checksquareData);
-              if (!noBlockingCheck) afterBlockingPiece = checksquareData;
+              if (!_noBlockingCheck) _isAfterBlockingPiece = _checksquareData;
             } else {
-              if (afterBlockingPiece)
-                checksquare += "z";// protected square AFTER a blocking piece
+              if (_isAfterBlockingPiece)
+                _checksquare += ___SQUARE_POTENTIAL_DEFEND_MARKER___;// protected square AFTER a blocking piece
               else {
                 //checksquareData.square_element.add_relationData(squareData);
                 //squareData.square_element.add_relationData(checksquareData);
-                checksquareData.square_element.set_protected_By(square, piece_is);
+                _checksquareData.square_element.set_protected_By(square, piece_is);
               }
             }
-            reachableSquares.push(checksquare);
-            return checksquare;
+            _reachableSquares.push(_checksquare);
+            return _checksquare;
           };
-          let add = (
-            checksquare = files[idxFile - 1] + ranksAscending[idxRank - 1],
-            noBlockingCheck = false
+          let _add_destination_square = (
+            //idxFile and idxRank are locally scoped variables
+            _add_square = files[idxFile - 1] + ranksAscending[idxRank - 1],
+            _noBlockingCheck = false
           ) => {
-            if (checksquare) attack_or_defend(checksquare, noBlockingCheck);
-            //else at my own square
+            if (_add_square) attack_or_defend(_add_square, _noBlockingCheck);
+            //else this is at my own square
           };
           let straights = _ => {
-            while (idxRank++ < idxBorder - 1) add(); //forward
+            //idxFile and idxRank are locally scoped variables
+            //so function can be used for any dimension board (ie. checkers is 10x10)
+            while (idxRank++ < idxBorder - 1) _add_destination_square(); //forward
             reset();
-            while (idxFile++ < idxBorder - 1) add(); //right
+            while (idxFile++ < idxBorder - 1) _add_destination_square(); //right
             reset();
-            while (--idxRank) add(); //back
+            while (--idxRank) _add_destination_square(); //back
             reset();
-            while (--idxFile) add(); //left
+            while (--idxFile) _add_destination_square(); //left
             reset();
-            return reachableSquares;
+            return _reachableSquares;
           };
           let diagonals = _ => {
-            while (++idxFile < idxBorder && ++idxRank < idxBorder) add(); //forward-right
+            while (++idxFile < idxBorder && ++idxRank < idxBorder) _add_destination_square(); //forward-right
             reset();
-            while (++idxFile < idxBorder && --idxRank) add(); //backward-right
+            while (++idxFile < idxBorder && --idxRank) _add_destination_square(); //backward-right
             reset();
-            while (--idxFile && --idxRank) add(); //backward-left
+            while (--idxFile && --idxRank) _add_destination_square(); //backward-left
             reset();
-            while (--idxFile && ++idxRank < idxBorder) add(); //forward-left
+            while (--idxFile && ++idxRank < idxBorder) _add_destination_square(); //forward-left
             reset();
-            return reachableSquares;
+            return _reachableSquares;
           };
-          let cells = (x, addcell = true) =>
-            reachableSquares.concat(
-              x.map(loc => {
+          let _procesDestinations = (
+            _piece_offset_destinations,        // array [ [0,1] , [1,1] ]
+            _add_tocell_as_destination = true // pawns can only go diagonal while taking another piece
+          ) =>
+            _reachableSquares.concat(
+              //todo use reduce instead of map and later filter?
+              _piece_offset_destinations.map(loc => {
                 let tocell = translateSquare(
-                  square,/* destinationsquare */
-                  playdirection * loc[0],
+                  square,                 // current processing square
+                  playdirection * loc[0], // black or white piece offset
                   playdirection * loc[1]
                 );
-                let tocellData = board.squareData(tocell);
-                if (addcell) add(tocell, true /* do not check for blocking pieces*/);
-                return tocellData;
+                if (tocell) {     // if offset location is within board
+                  if (_add_tocell_as_destination)
+                    _add_destination_square(
+                      tocell,
+                      true /* do not check for blocking pieces*/
+                    );
+                  // need to return squareDate for pawn processing
+                  // will be filtered away later
+                  return _pieceboard.squareData(tocell);
+                } else {
+                  return false;   // off board locations are filtered away
+                }
               })
             );
 
-          let piece_destinations = {
-            pawn: _ => {
-              let attacks = cells([[-1, 1], [1, 1]], false) // diagonals moves only valid
-                .filter(squareData => squareData.piece)     // when it is an attack
-                .map(squareData => attack_or_defend(squareData.square, true));// true=no blocking check
+          let _castlingMoves = _ => [];   // todo add castling logic
+
+          this.destinations.push(...{// spread regular array values into extended ChessPieceDestinations
+            [___PIECE_PAWN___]: _ => {
+              //todo add en-passant move
+              let _pawnDiagonalMoves = _procesDestinations(
+                [[-1, 1], [1, 1]],                        // diagonal moves
+                false                                     // but NOT destinations if they are empty squares
+              );
+              let _pawnAttacks = _pawnDiagonalMoves       // diagonals moves only valid
+                .filter(squareData => squareData.piece)   // only if there is a piece in the other square
+                .map(squareData => attack_or_defend(
+                  squareData.square,                      // record destination square
+                  true                                    // true=no blocking check
+                ));
               // 1 or 2 moves forward can not attack
-              attackMode = false;
-              afterBlockingPiece = true;
-              let forward = [[0, 1]];
-              if (idxRank == 2 || idxRank == 7) forward.push([0, 2]);
-              let moves = cells(forward, false) // 2 cells forwars
-                .filter(squareData => !(afterBlockingPiece && squareData.piece))
-                .map(squareData => squareData.square);
-              return [...attacks, ...moves];
+              _attackMode = false;
+              _isAfterBlockingPiece = true;
+              let _pawnForwardMoves = [[0, 1]];
+              if (idxRank == 2 || idxRank == 7) _pawnForwardMoves.push([0, 2]); // no need to check direction, illegal move is off the board anyway
+              return [//todo refactor using .reduce
+                ..._pawnAttacks,
+                ..._procesDestinations(
+                  _pawnForwardMoves,
+                  false
+                ).filter(squareData => !(_isAfterBlockingPiece && squareData.piece))  // keep the destination pawn can goto
+                  .map(squareData => squareData.square)                               // only record the square label
+              ];
             },
-            rook: straights, //todo add castling
-            knight: _ => cells([
+            [___PIECE_KNIGHT___]: _ => _procesDestinations([
               [2, -1],
               [2, 1],
               [1, 2],
@@ -597,24 +689,35 @@ function SVG_chesspiece({
               [-1, -2],
               [1, -2]
             ]),
-            bishop: diagonals,
-            queen: _ => [...straights(), ...diagonals()],
-            king: _ => cells([
-              [1, -1],// NW
-              [1, 0],//N
-              [1, 1],//NE
-              [0, 1],//E
-              [-1, 1],//SE
-              [0, -1],//S
-              [-1, -1],//SW
-              [-1, 0]//W
-            ]) //todo add castling
-          }
-          [piece_is.split`-`[1]]().filter(square => square);
+            [___PIECE_BISHOP___]: diagonals,
+            [___PIECE_QUEEN___]: _ => [...straights(), ...diagonals()],
+            [___PIECE_KING___]: _ => {
+              return [..._procesDestinations([
+                [1, -1],// NW
+                [1, 0],//N
+                [1, 1],//NE
+                [0, 1],//E
+                [-1, 1],//SE
+                [0, -1],//S
+                [-1, -1],//SW
+                [-1, 0]//W
+              ]), ..._castlingMoves()]
+            },
+            [___PIECE_ROOK___]: _ => {
+              return [...straights(), ..._castlingMoves()]
+            }
 
-          this.destinations = piece_destinations;
+          }[piece_is.split`-`[1]]()         // execute piece function; ie. "king"() returns array of destinations
+            .filter(square =>
+              square                        // delete all empty/false locations
+              && typeof square === "string" // delete all squareData from pawn processing
+            )
+          );// this.destinations ChessPieceDestinations Array
+
+          if (this.board.id == "ChesslyDemo" && FEN_translation_Map.get(this.is) == "k") console.warn(this.at, this.is, this.destinations);
+
           return {
-            piece_destinations
+            piece_destinations: this.destinations
             //inbetweenPieces
           };
         }
@@ -1089,7 +1192,7 @@ customElements.define(
       if (this.is_interactive) {
         //if (from_square) 
         [...this.layerPieces.children].map(piece => {
-          piece.show_piece_moves(from_square, [this.layerMoves]);
+          piece._show_piece_moves(from_square, [this.layerMoves]);
         });
         this.layerSquares.set_square_relations();//loop all squares updating this.board.layerSquares with correct attribute data
         history.pushState({}, "", "?fen=" + encodeURI(this.fen));
@@ -1149,21 +1252,39 @@ customElements.define(
       else
         return [];
     }
+    get pieces() {
+      return this.piece('*');
+    }
     piece(
       fen_is = "K",//just any default
       selector = false// optional custom selector string
     ) {
-      if (fen_is == '*')
-        selector = '*';
-      else
-        if (fen_is.length < 2) fen_is = FEN_translation_Map.get(fen_is);
-      if (!selector) {
-        if (fen_is.includes("-"))
-          selector = `[is="${fen_is}"]`;
+      if (this.squares.includes(fen_is)) {  // selector is A1 to H8 square
+        selector = fen_is;
+      } else {                              // selector is FEN or *
+        if (fen_is == '*')
+          selector = '*';
         else
-          selector = fen_is = `[is*="${fen_is}"]`;
+          if (fen_is.length < 2) fen_is = FEN_translation_Map.get(fen_is);
+        if (!selector) {
+          if (fen_is.includes("-"))
+            selector = `[is="${fen_is}"]`;
+          else
+            selector = fen_is = `[is*="${fen_is}"]`;
+        }
       }
       return this.layerPieces.squares(selector);
+    }
+    isCheck(
+      check = char => this.piece(char).hasAttribute(___ATTACKED_BY___)
+    ) {
+      return check('K') ? ___WHITE___ : check('k') ? ___BLACK___ : false;
+    }
+    isMate() {
+      //!requires current player
+      let piece = this.piece('K').data();
+      return piece;
+
     }
     move(sq1, sq2) {
       let piece;
@@ -1180,10 +1301,13 @@ customElements.define(
     rotate() {
       this.board.classList.toggle("rotated");
     }
-    files() {
+    get squares() {//top left to bottom right: "A8","A7","A6"... "G1","H1"
+      return all_board_squares;
+    }
+    get files() {
       return files;
     }
-    ranks() {
+    get ranks() {
       return ranksAscending;
     }
     square_from_position(x, y) {// pageX, pageY screen coordinates
