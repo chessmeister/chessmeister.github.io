@@ -139,7 +139,7 @@
         -
         <a href="#documentation">Documentation</a>
         -
-        <a href="#designer">Designer</a>
+        <a href="#design">Design</a>
         -
         <a href="#challenges">Challenges</a>
         -
@@ -270,13 +270,13 @@
         <h3>JavaScript </h3>
         <pre>
     let board = document.querySelector('chessly-board');
-    console.log( board.fen );    // gets current board fen
-    board.fen = "..fenstring.."; // sets board fen
-    board.piece_at_square("F3"); // gets IMG element at F3 or False
+    console.log( board.fen );      // gets current board fen
+    board.fen = "8/8/8/8/8/8/8/8"; // sets board fen (blank board)
+    board.piece("F3");             // gets IMG element at F3 or False
+    board.piece("K");              // gets White King IMG element
     board.add_board_piece( "white-rook" , "F3" );
     board.remove_board_piece( "F3" );
     board.rotate();
-
     //for more see source code
         </pre>
         <h3>Events</h3>
@@ -376,7 +376,7 @@
         </div>
     </section>
     <section id="DesignChessboard">
-        <a name=challenges></a>
+        <a name=design></a>
         <p id=Links> </p>
         <style>
             #DesignChessboard img {
@@ -543,4 +543,4 @@
 </body>
 
 </html>
-Published: 2019-06-15 21:02 
+Published: 2019-06-15 21:12 
