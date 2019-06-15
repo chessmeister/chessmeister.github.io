@@ -12,6 +12,9 @@
             visibility: hidden;
             color: whitesmoke;
             --theme_pre_size: 1.2em;
+
+            --textstroke: 1px black;
+            --defaultmargin: .5em;
         }
 
         p {
@@ -64,6 +67,8 @@
             border-top: 5px solid lightgreen;
             margin: 1em;
             padding: 1em;
+
+            scroll-snap-align: start;
         }
 
         .htmlcode b {
@@ -83,8 +88,6 @@
             margin: 0 auto;
             background: lightgray;
 
-            --textstroke: 1px black;
-            --defaultmargin: .5em;
         }
 
         .grid3column {
@@ -170,10 +173,9 @@
         </chessly-board>
     </section>
 
-    <a name=documentation></a>
-    <p id=Links>
-    </p>
     <section id="Documentation">
+        <a name=documentation></a>
+        <p id=Links> </p>
         <h2>chessly.js - Custom Element documentation</h2>
         <pre class="htmlcode">
     &lt;head>
@@ -293,10 +295,9 @@
 
 </pre>
     </section>
-    <a name=challenges></a>
-    <p id=Links>
-    </p>
     <section id="Chess Challenge">
+        <a name=challenges></a>
+        <p id=Links> </p>
         <style>
             [result]::after {
                 font-size: 300%;
@@ -350,7 +351,7 @@
             <div id=Kasparov><img loading="lazy"
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
                 <chessly-board static id=Game0 fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1"
-                    move="PG7" hint="Promote the pawn the black king can not capture">
+                    move="PG7" hint="Pawn at G6">
                 </chessly-board>
                 <chessly-board static id=Game2 fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b" title="Game 1997 #3"
                     result="draw">
@@ -375,10 +376,9 @@
             </div>
         </div>
     </section>
-    <a name=designer></a>
-    <p id=Links>
-    </p>
     <section id="DesignChessboard">
+        <a name=challenges></a>
+        <p id=Links> </p>
         <style>
             #DesignChessboard img {
                 /* width: 100%;
@@ -404,6 +404,7 @@
         </div>
         <div class=grid3column>
             <div class=pieces>
+                <!-- draggable is a work in progress -->
                 <img is=white-king draggable="draggable">
                 <img is=white-queen draggable="draggable">
                 <img is=white-bishop draggable="draggable">
@@ -426,6 +427,14 @@
             </div>
         </div>
     </section>
+
+    <p id=Links>
+    </p>
+    <section id="Footer">
+        <a name=footer></a>
+        <p id=Links> </p>
+    </section>
+
     <script>
         const ___FEN___ = "fen";
         let challengeboard = false;
@@ -472,7 +481,6 @@
                 board.onmouseout = event => {
                     if (savedfen) {
                         ChessChallenge.fen = savedfen;
-                        FEN.innerHTML = savedfen;
                     }
                 }
                 board.onclick = event => {
@@ -536,4 +544,4 @@
 </body>
 
 </html>
-Published: 2019-06-14 14:09 
+Published: 2019-06-15 21:00 
