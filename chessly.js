@@ -1,3 +1,11 @@
+/**
+ * DISCLAIMER
+ * This project is NOT about Chess! 
+ * The topic of Chess was chosen for educational purposes to demonstrate W3C Standard Custom Elements, CSS Grid and Native JavaScript DOM performance
+ * 
+ * License: UNlicense - https://unlicense.org/
+ * 
+ */
 
 /**
  * returns True/False indicating odd value (for both negative and positive x)
@@ -169,6 +177,8 @@ const ___ATTR_STATIC___ = "static";
 
 const ___OUTLINE_ATTACKS___ = false;//"red";// set to CSS colorvalue to outline SVG piece//todo isn't reset while dragging
 
+const ___ATTR_RESULT___ = ['1-0', '0-1', '1/2-1/2', '*'];//!todo
+
 // Forsyth Edwards Notation
 // maps P->white-pawn and white-pawn->P
 let FEN_translation_Map = new Map();
@@ -189,6 +199,12 @@ let all_board_squares = ranks.map(rank => files.map(file => file + rank)).flat()
  * @param {array} square
  */
 let squarenameUpperCase = square => (square[0] + square[1]).toUpperCase();
+
+/**
+ * return true/false if square is a valid square
+ * @param {array} square
+ */
+let is_square = square => all_board_squares.includes(square);
 
 /**
  * translate current cell to other location:
@@ -1155,7 +1171,7 @@ customElements.define(
       //default layer:
       layer = this.layerPieces
     ) {
-      if (all_board_squares.includes(square)) {
+      if (is_square(square)) {
         if (piece_is.length < 3) piece_is = FEN_translation_Map(piece_is);
         layer.add_board_layer_piece(piece_is, square);
       }
@@ -1253,7 +1269,7 @@ customElements.define(
       fen_is = "K",//just any default
       selector = false// optional custom selector string
     ) {
-      if (this.squares.includes(fen_is)) {  // selector is A1 to H8 square
+      if (is_square(fen_is)) {  // selector is A1 to H8 square
         selector = fen_is;
       } else {                              // selector is FEN or *
         if (fen_is == '*')
