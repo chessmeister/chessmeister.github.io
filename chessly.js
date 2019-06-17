@@ -28,6 +28,11 @@ let chunk = (
     , r.concat(arr.length ? chunk(arr, size) : [])// [] is concatted last!
   );
 
+/**
+ * extend Array to store board destinations for every chess piece 
+ * adds Chess related methods
+ * @param {board} board - reference to chessly-board this array applies to
+ */
 class ChessPieceDestinations extends Array {
   constructor(board) {
     super();
@@ -36,18 +41,25 @@ class ChessPieceDestinations extends Array {
   _filter(char = ___SQUARE_ATTACK_MARKER___) {
     return this.filter(location => location.length > 2 && location[2] === char)
   }
-  get attacks() {
+  get attacks() {// get X marked locations
     return this._filter(___SQUARE_ATTACK_MARKER___);
   }
-  get defends() {
+  get defends() {// get Z marked locations
     return this._filter(___SQUARE_DEFEND_MARKER___);
   }
-  pieces() {
+  get pieces() {// gets all pieces in current piece destination square
     return this.map(square => this.board.piece(squarenameUpperCase(square)));
   }
-
+  //todo get undefened(){// get destination squares that are not defended
+  // requires analysis of whole board
+  //}
 }
 
+/**
+ * WORK IN PROGRESS
+ * extend Event 
+ * @param - default Event parameters
+ */
 class ChesslyEvent extends Event {//! buggy in Edge and Safari! requires changing prototype workaround
   constructor(typeArg, eventInit) {
     super(typeArg, eventInit);
@@ -63,7 +75,6 @@ class ChesslyEvent extends Event {//! buggy in Edge and Safari! requires changin
 //     }
 //   }
 // ));
-
 
 
 // ======================================================== Drag events
@@ -127,9 +138,10 @@ let end_drag = event => {
 }
 
 // ======================================================== App declaration
+
 const ___SQUARECOUNT___ = 8;//chess or checkers or any board width/height
 
-//!for readablity constants can also be used hardcoded in CSS declarations (way below)
+//!TAKE CARE for readablity constants can also be used hardcoded in CSS declarations (way below)
 
 //configurable
 const ___WHITE___ = "white";
@@ -178,6 +190,8 @@ const ___ATTR_STATIC___ = "static";
 const ___OUTLINE_ATTACKS___ = false;//"red";// set to CSS colorvalue to outline SVG piece//todo isn't reset while dragging
 
 const ___ATTR_RESULT___ = ['1-0', '0-1', '1/2-1/2', '*'];//!todo
+
+const css_F12friendly_linebreak = `\n`;// for user inspecting F12 elements console, display linebreaks in CSS
 
 // Forsyth Edwards Notation
 // maps P->white-pawn and white-pawn->P
@@ -840,65 +854,67 @@ class SquareElement extends HTMLElement {
 customElements.define("square-white", class extends SquareElement { });
 customElements.define("square-black", class extends SquareElement { });
 
-let css_linebreak = `\n`;
 let gridrepeat = gap => `repeat(${___SQUARECOUNT___}, ${(100 - (___SQUARECOUNT___ - 1) * gap) / ___SQUARECOUNT___}%)`;
 let cssgrid = gap =>
   `position:absolute;
   width:100%;
   height:100%;
-  box-sizing: border-box;` + css_linebreak +
-  `  display:grid;
+  box-sizing: border-box;` + css_F12friendly_linebreak +
+  `display:grid;
   grid-gap:${gap};
   grid-template-columns:${gridrepeat(gap)};
-  grid-template-rows:${gridrepeat(gap)};` + css_linebreak +
-  `  grid-template-areas: ${css_linebreak + ' "' + chunk([...all_board_squares], ___SQUARECOUNT___).join('"' + css_linebreak + ' "').replace(/,/g, " ") + '"' + css_linebreak};` + css_linebreak +
+  grid-template-rows:${gridrepeat(gap)};` + css_F12friendly_linebreak +
+  `  grid-template-areas: ${css_F12friendly_linebreak + ' "' + chunk([...all_board_squares], ___SQUARECOUNT___).join('"' + css_F12friendly_linebreak + ' "').replace(/,/g, " ") + '"' + css_F12friendly_linebreak};` + css_F12friendly_linebreak +
   `  grid-auto-flow:row`;
 
 let game_css =
   `<style>:root {
     all:initial;
     display:block;
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
   `*{
     box-sizing:border-box;
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
   `#board{
     position:relative;
     /* border:var(--border, 1vh solid black); */
     width:100%;
     max-width:90vh;
     margin:0 auto;
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
+
+  // square sized board
   `#board:after{
     content:"";
     display:block;
-    padding-bottom:100%
-  }` + css_linebreak +// square sized board
+    padding-bottom:100%;
+  }` + css_F12friendly_linebreak +
+
   //only Chrome does conic-gradient to create a checkboard layout:
   //+ `#board{--sqblack:#b58863;--sqwhite:#00d9b5;--sqempty:green;}`
   //+ `#board{background:conic-gradient(var(--sqblack) 0.25turn, var(--sqwhite) 0.25turn 0.5turn, var(--sqblack) 0.5turn 0.75turn, var(--sqwhite) 0.75turn) top left/25% 25% repeat}`
   `square-white{
     --bgcolor:var(--chessly-squarewhite-color,#f0e9c5)
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
   `square-black{
     --bgcolor:var(--chessly-squareblack-color,#b58863)
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
   `#${___LAYER_ID_SQUARES___} square-white,
    #${___LAYER_ID_SQUARES___} square-black{
     background-color:var(--bgcolor);
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
 
   //create grid-area for every square name (A1 to H8)
-  `${all_board_squares.map(square => `[${___AT___}="${square}"]{ grid-area:${square} }`).join(css_linebreak)}` + css_linebreak +
+  `${all_board_squares.map(square => `[${___AT___}="${square}"]{ grid-area:${square} }`).join(css_F12friendly_linebreak)}` + css_F12friendly_linebreak +
 
   `board-layer{
     ${cssgrid(0)};
     user-select:none
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
 
   `square-white:not([${___AT___}]),square-black:not([${___AT___}]){
     border:1px solid red
-  }` + css_linebreak +// extra warning for squares without a piece
+  }` + css_F12friendly_linebreak +// extra warning for squares without a piece
 
   // squarenames A1 - H8  in empty squares
   `#${___LAYER_ID_SQUARES___} >*[piece="none"]:before{
@@ -912,51 +928,72 @@ let game_css =
     color:var(--chessly-squarelabel-color,black);
     font-family:arial;
   }` +
+
+  // testing options
   // `#${___LAYER_ID_SQUARES___} >*{border:1px solid red}` + //cell File/Rank text
   // `#${___LAYER_ID_SQUARES___} >*{position:relative;border:1px solid red}` + //cell File/Rank text
 
+  // squares that can be reached by the current selected piece (at square ___ATTR_FROM___)
   `#${___LAYER_ID_DESTINATIONS___} >*[${___ATTR_FROM___}]{
     border:var(--chessly-allowed-destinations,.5vh solid orange)
-  }` + css_linebreak +//destinations
+  }` + css_F12friendly_linebreak +//destinations
 
-  // (dragstart) from location
+  // (dragstart) location where current piece start dragging
   `#${___LAYER_ID_DESTINATIONS___} >*[${___ATTR_DRAGSTART___}]{
     border:.5vh dashed var(--bgcolor);
-    background:lightgreen
-  }` + css_linebreak +
+    background:lightgreen;
+  }` + css_F12friendly_linebreak +
 
-  //possible moves for this piece on this board
+  // WHILE DRAGGING a piece: possible moves for this piece on this board
   `#${___LAYER_ID_MOVES___} >*[${___ATTR_FROM___}]{
     width:90%;
     height:90%;
     margin:5%;
     border:var(--chessly-piece-destinations,.5vh dashed green)
-  }` + css_linebreak +
-  //  `#moves >*:not([piece="none"]){border-color:red}` +
+  }` + css_F12friendly_linebreak +
 
+  //rotate black to bottom of board
   `.rotated,.rotated img{
     transform:rotate(180deg)
-  }` + css_linebreak +
+  }` + css_F12friendly_linebreak +
+
+  //extra testing: img without an at= location  (possible if user defined IMG in lightDOM)
   `img:not([${___AT___}]){
     background:red;
-  }` + css_linebreak +//debug
+  }` + css_F12friendly_linebreak +
+
+  //all positioned pieces
   `img[${___AT___}]{
     width:100%;
     z-index:11;
-  }` + css_linebreak +
-  `</style>` + css_linebreak +
+  }` + css_F12friendly_linebreak +
+
+  `</style>` + css_F12friendly_linebreak +
 
 
   `<style id=attack_and_defend_dropshadow>` +
-  `#${___LAYER_ID_PIECES___}{--swa:drop-shadow(var(--dropsize) 0px 1px var(--chessly-attack-color,darkred));--swd:drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)}` +
-  // you can't set :before and :after on IMG elements!
-  /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}][${___DEFENDED_BY___}]{filter:var(--swa) var(--swd)}` +
-  /* */ `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){filter:var(--swa)}` +
-  /* */ `#${___LAYER_ID_PIECES___} img[${___DEFENDED_BY___}]:not([${___ATTACKED_BY___}]){filter:var(--swd)}` +
-
-  /* Attacked piece without defenders red on both sides */
-  `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){` +
-  `filter:drop-shadow(var(--dropsize) 0px 1px red) drop-shadow(calc(-1*var(--dropsize)) 0px 1px var(--chessly-undefended-color,red));` +
+  `#${___LAYER_ID_PIECES___}{
+    --dropshadow-attack:
+        drop-shadow(var(--dropsize) 0px 1px var(--chessly-attack-color,darkred));
+    --dropshadow-defense:
+        drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)
+  }` +
+  // you can't set :before and :after psuedo selectors on IMG elements
+  // thus can't set drop-shadows there, using filter instead
+  `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}][${___DEFENDED_BY___}]{
+    filter:var(--dropshadow-attack) var(--dropshadow-defense)
+  }`+
+  `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){
+    filter:var(--dropshadow-attack)
+  }` +
+  `#${___LAYER_ID_PIECES___} img[${___DEFENDED_BY___}]:not([${___ATTACKED_BY___}]){
+    filter:var(--dropshadow-defense)
+  }` +
+  /* Attacked piece without defenders gets red on both sides */
+  `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){
+    filter:
+      drop-shadow(var(--dropsize) 0px 1px red) 
+      drop-shadow(calc(-1*var(--dropsize)) 0px 1px var(--chessly-undefended-color,red));` +
   `</style>` +
 
 
@@ -965,7 +1002,7 @@ let game_css =
   #${___LAYER_ID_SQUARES___} [${___ATTACKED_BY___}]:after
   {
     z-index:1;
-    display:none;/*//!todo set to block when counters are correct */
+    display:none;/*//!todo set to block when counters bug is fixed */
     position:relative;
     width:80%;
     height:100%;
