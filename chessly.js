@@ -15,17 +15,22 @@ let isOdd = x => (x === 0 ? false : (x & -x) === 1); // isOdd returns T/F for ne
 
 /**
  * chunck a string in equal sizes
- * @param {array} arr - 
- * @param {number} sizearr
+ * @param {array} arr - input array 
+ * @param {number} size
  */
 let chunk = (
   arr, // input Array
   size, // chunk size
   //declare helper array
-  r = [] // result: initialized on first call, set in recursion call
+  result = [] // result: initialized on first call, set in recursion call
 ) => (
-    r.push(arr.splice(0, size))
-    , r.concat(arr.length ? chunk(arr, size) : [])// [] is concatted last!
+    result.push(arr.splice(0, size))  // push first size chunk
+    ,
+    result.concat(                    // process remaining chunk
+      arr.length
+        ? chunk(arr, size)
+        : []                          // concat needs an argument , [] is concatted last!
+    )
   );
 
 /**
@@ -454,6 +459,7 @@ function SVG_chesspiece({
               piece._show_moves_on_Moves_and_Destinations_layers(piece.at);
           });
           this.addEventListener("touchmove", event => {
+            event.preventDefault();
             if (event.target.board) {
               let piece = event.target;
               let { board } = piece;
@@ -1022,9 +1028,12 @@ let game_css =
 
 
   `<style id=css_interactive_board>
-    img[${___AT___}]{
+  #board{
+    touch-action:none;
+  }
+  img[${___AT___}]{
       cursor:grab
-    }
+  }
   </style>`;
 
 customElements.define("board-layer", class extends HTMLElement {
