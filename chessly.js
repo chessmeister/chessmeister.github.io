@@ -5,7 +5,26 @@
  * 
  * License: UNlicense - https://unlicense.org/
  * 
+ * 
+ * Autonomous Custom Elements:
+ *  <chessly-board>
+ *  <board-layer>
+ *
+ * Extended Buil-In Elements:
+ *  <img is=white-pawn />
+ *  <img is=black-rook />
+ *  <img is=...-knight />
+ *  <img is=...-bishop />
+ *  <img is=...-queen />
+ *  <img is=...-king />
  */
+
+// Custom Element names
+const ChesslyNameSpace = "chessly";
+const ChesslyBoardLayer = ChesslyNameSpace + "-board-layer";
+const ChesslySquareNameSpace = ChesslyNameSpace + "-square-";
+const ChesslyBoardSquareWhite = ChesslySquareNameSpace + "white";
+const ChesslyBoardSquareBlack = ChesslySquareNameSpace + "black";
 
 /**
  * returns True/False indicating odd value (for both negative and positive x)
@@ -857,8 +876,8 @@ class SquareElement extends HTMLElement {
     return this.board.piece(this._square);
   }
 }
-customElements.define("square-white", class extends SquareElement { });
-customElements.define("square-black", class extends SquareElement { });
+customElements.define(ChesslyBoardSquareWhite, class extends SquareElement { });
+customElements.define(ChesslyBoardSquareBlack, class extends SquareElement { });
 
 let gridrepeat = gap => `repeat(${___SQUARECOUNT___}, ${(100 - (___SQUARECOUNT___ - 1) * gap) / ___SQUARECOUNT___}%)`;
 let cssgrid = gap =>
@@ -899,26 +918,26 @@ let game_css =
   //only Chrome does conic-gradient to create a checkboard layout:
   //+ `#board{--sqblack:#b58863;--sqwhite:#00d9b5;--sqempty:green;}`
   //+ `#board{background:conic-gradient(var(--sqblack) 0.25turn, var(--sqwhite) 0.25turn 0.5turn, var(--sqblack) 0.5turn 0.75turn, var(--sqwhite) 0.75turn) top left/25% 25% repeat}`
-  `square-white{
-    --bgcolor:var(--chessly-squarewhite-color,#f0e9c5)
+  `${ChesslyBoardSquareWhite}{
+    --bgcolor:var(--${ChesslyNameSpace}-squarewhite-color,#f0e9c5)
   }` + css_F12friendly_linebreak +
-  `square-black{
-    --bgcolor:var(--chessly-squareblack-color,#b58863)
+  `${ChesslyBoardSquareBlack}{
+    --bgcolor:var(--${ChesslyNameSpace}-squareblack-color,#b58863)
   }` + css_F12friendly_linebreak +
-  `#${___LAYER_ID_SQUARES___} square-white,
-   #${___LAYER_ID_SQUARES___} square-black{
+  `#${___LAYER_ID_SQUARES___} ${ChesslyBoardSquareWhite},
+   #${___LAYER_ID_SQUARES___} ${ChesslyBoardSquareBlack}{
     background-color:var(--bgcolor);
   }` + css_F12friendly_linebreak +
 
   //create grid-area for every square name (A1 to H8)
   `${all_board_squares.map(square => `[${___AT___}="${square}"]{ grid-area:${square} }`).join(css_F12friendly_linebreak)}` + css_F12friendly_linebreak +
 
-  `board-layer{
+  `${ChesslyBoardLayer}{
     ${cssgrid(0)};
     user-select:none
   }` + css_F12friendly_linebreak +
 
-  `square-white:not([${___AT___}]),square-black:not([${___AT___}]){
+  `${ChesslyBoardSquareWhite}:not([${___AT___}]),${ChesslyBoardSquareBlack}:not([${___AT___}]){
     border:1px solid red
   }` + css_F12friendly_linebreak +// extra warning for squares without a piece
 
@@ -931,7 +950,7 @@ let game_css =
     position:relative;
     text-align:center;
     top:40%;
-    color:var(--chessly-squarelabel-color,black);
+    color:var(--${ChesslyNameSpace}-squarelabel-color,black);
     font-family:arial;
   }` +
 
@@ -941,7 +960,7 @@ let game_css =
 
   // squares that can be reached by the current selected piece (at square ___ATTR_FROM___)
   `#${___LAYER_ID_DESTINATIONS___} >*[${___ATTR_FROM___}]{
-    border:var(--chessly-allowed-destinations,.5vh solid orange)
+    border:var(--${ChesslyNameSpace}-allowed-destinations,.5vh solid orange)
   }` + css_F12friendly_linebreak +//destinations
 
   // (dragstart) location where current piece start dragging
@@ -955,7 +974,7 @@ let game_css =
     width:90%;
     height:90%;
     margin:5%;
-    border:var(--chessly-piece-destinations,.5vh dashed green)
+    border:var(--${ChesslyNameSpace}-piece-destinations,.5vh dashed green)
   }` + css_F12friendly_linebreak +
 
   //rotate black to bottom of board
@@ -980,7 +999,7 @@ let game_css =
   `<style id=attack_and_defend_dropshadow>` +
   `#${___LAYER_ID_PIECES___}{
     --dropshadow-attack:
-        drop-shadow(var(--dropsize) 0px 1px var(--chessly-attack-color,darkred));
+        drop-shadow(var(--dropsize) 0px 1px var(--${ChesslyNameSpace}-attack-color,darkred));
     --dropshadow-defense:
         drop-shadow(calc(-1*var(--dropsize)) 0px 1px darkgreen)
   }` +
@@ -999,7 +1018,7 @@ let game_css =
   `#${___LAYER_ID_PIECES___} img[${___ATTACKED_BY___}]:not([${___DEFENDED_BY___}]){
     filter:
       drop-shadow(var(--dropsize) 0px 1px red) 
-      drop-shadow(calc(-1*var(--dropsize)) 0px 1px var(--chessly-undefended-color,red));` +
+      drop-shadow(calc(-1*var(--dropsize)) 0px 1px var(--${ChesslyNameSpace}-undefended-color,red));` +
   `</style>` +
 
 
@@ -1036,7 +1055,7 @@ let game_css =
   }
   </style>`;
 
-customElements.define("board-layer", class extends HTMLElement {
+customElements.define(ChesslyBoardLayer, class extends HTMLElement {
   // Methods:
   // clear_layer()
   // mark_attack_from_to_square(from_square, to_square)
@@ -1089,7 +1108,7 @@ customElements.define("board-layer", class extends HTMLElement {
       let squareData = board.squareData(square);
       let { idxFile, idxRank } = squareData;
       let squarecolor = [___BLACK___, ___WHITE___][~~(isOdd(idxFile) ^ isOdd(idxRank))];
-      let element = document.createElement("square-" + squarecolor);
+      let element = document.createElement(ChesslySquareNameSpace + squarecolor);
       element.square = square;
       element.setAttribute(___AT___, square);
       element.onclick = event => {
@@ -1141,7 +1160,7 @@ customElements.define("board-layer", class extends HTMLElement {
 
 
 customElements.define(
-  "chessly-board",
+  ChesslyNameSpace + "-board",
   class extends HTMLElement {
     static get observedAttributes() {
       return [___ATTR_FEN___, ___ATTR_STATIC___];
@@ -1207,7 +1226,7 @@ customElements.define(
       if (this._initfen) this.setfen(this._initfen);
     }
     addlayer(id) {
-      let layer = document.createElement("board-layer");
+      let layer = document.createElement(ChesslyBoardLayer);
       layer.id = id;//used by CSS
       return this.board.appendChild(layer);
     }
@@ -1424,7 +1443,7 @@ customElements.define(
     dispatch(eventname, detail = {}) {
       detail.name = eventname;
       this.dispatchEvent(
-        new CustomEvent("chessly-event", {
+        new CustomEvent(ChesslyNameSpace + "-event", {
           bubbles: true,    // event bubbles UP the DOM
           composed: true,   // !!! required so Event bubbles through the shadowDOM boundaries
           detail
@@ -1446,4 +1465,4 @@ customElements.define(
 // board.add_board_piece("white-queen", "E4");
 // board.show_moves_piece_in_square("D1");
 
-console.log('chessly loaded');
+console.log(ChesslyNameSpace + ' loaded');
