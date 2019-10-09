@@ -31,6 +31,9 @@ https://choosealicense.com/licenses/unlicense/
 # Resources
 
 * convert PGN to FEN : http://www.chess-poster.com/english/lt_pgn_to_fen/lt_pgn_fen.htm
+
+* Current implementations: https://github.com/jhlywa/chess.js and https://chessboardjsx.com/  and https://chessboardjs.com/
+
 * implement a Chess Game: https://github.com/sandy98/chess-board
 
 * https://rexxars.github.io/react-chess/  
@@ -39,4 +42,4 @@ https://choosealicense.com/licenses/unlicense/
 * Or go bigger... 500 KB React version : https://chessboardjsx.com/
 
 * Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-06-19 12:45 
+Published: 2019-10-09 15:32 
