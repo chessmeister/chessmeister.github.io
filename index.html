@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="description" content="a Custom Element/WebComponent for Chesspieces and Chessboard">
-    <title>Chessly</title>
-    <script defer src="chessly.js"></script>
+    <title>ChessMeister</title>
+    <script defer src="elements.chessmeister.js"></script>
     <style id=theme_greenwhite>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -145,28 +145,28 @@
             font-size: .8em;
         }
 
-        chessly-board {
+        chessmeister-board {
             display: block;
             border: 2px solid grey;
             margin-bottom: var(--defaultmargin);
             position: relative;
-            /* --chessly-squarelabel: transparent; */
-            --chessly-attack-color: darkred;
-            --chessly-defend-color: darkgreen;
-            --chessly-squarewhite-color: #f0e9c5;
-            --chessly-squareblack-color: #b58863;
+            /* --chessmeister-squarelabel: transparent; */
+            --chessmeister-attack-color: darkred;
+            --chessmeister-defend-color: darkgreen;
+            --chessmeister-squarewhite-color: #f0e9c5;
+            --chessmeister-squareblack-color: #b58863;
         }
     </style>
 </head>
 
 <body class="greencloth">
-    <a name="Chessly"></a>
-    <h1>CheSSly (beta) - Positioning Chesspieces</h1>
+    <a name="ChessMeister"></a>
+    <h1>ChessMeister (beta) - Positioning Chesspieces</h1>
     <h3>Demonstrating W3C standard Custom Elements and CSS4.<br>Chesspiece positions just happened to be a great
         paradigm
     </h3>
     <p id=Links>
-        <a href="#Chessly">Chessly</a>
+        <a href="#ChessMeister">ChessMeister</a>
         -
         <a href="#documentation">Documentation</a>
         -
@@ -174,36 +174,36 @@
         -
         <a href="#design">Design</a>
         -
-        <a href="https://github.com/chessly/chessly.github.io">GitHub</a>
+        <a href="https://github.com/chessmeister/chessmeister.github.io">GitHub</a>
         -
         By the same maker:<a href="https://card-ts.github.io/playingcardts/">PlayingCardts</a>
     </p>
 
 
     <!-- Fork me on GitHub label  -->
-    <a style="position:fixed;top:0;right:0" href="https://github.com/chessly/chessly.github.io"><img width="160"
-            height="160"
+    <a style="position:fixed;top:0;right:0" href="https://github.com/chessmeister/chessmeister.github.io"><img
+            width="160" height="160"
             src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png?resize=160%2C160"></a>
 
     <section>
         <style>
-            #ChesslyDemo {
+            #ChessMeisterDemo {
                 /* width: 90%; */
                 margin: 0 auto;
                 /* margin-right: 0; */
             }
         </style>
-        <chessly-board id=ChesslyDemo fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w">
-        </chessly-board>
+        <chessmeister-board id=ChessMeisterDemo fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w">
+        </chessmeister-board>
     </section>
 
     <section id="Documentation">
         <a name=documentation></a>
         <p id=Links> </p>
-        <h2>chessly.js - Custom Element documentation</h2>
+        <h2>elements.chessmeister.js - Custom Element documentation</h2>
         <pre class="htmlcode">
     &lt;head>
-    &nbsp;&nbsp;&lt;script <b>src="chessly.js"</b>>&lt;/script>
+    &nbsp;&nbsp;&lt;script <b>src="elements.chessmeister.js"</b>>&lt;/script>
     &lt;/head>
             </pre>
         <p>This single (9300 Bytes GZip) file creates <a
@@ -239,7 +239,7 @@
         <div class=documentationGrid>
             <div>
                 <pre class="htmlcode">
-    &lt;chessly-board 
+    &lt;chessmeister-board 
        <b>fen="rnbqkbnr/
             pppppppp/
             8/
@@ -248,12 +248,12 @@
             8/
             PPPPPPPP/
             RNBQKBNR"</b> >
-    &lt;/chessly-board>
+    &lt;/chessmeister-board>
     </pre>
             </div>
             <div>
-                <chessly-board style="--chessly-squarelabel-color:transparent"
-                    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"></chessly-board>
+                <chessmeister-board style="--chessmeister-squarelabel-color:transparent"
+                    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"></chessmeister-board>
             </div>
         </div>
         <p>
@@ -262,39 +262,39 @@
         <div class=documentationGrid>
             <div>
                 <pre class="htmlcode">
-    &lt;chessly-board <b>static</b>>
+    &lt;chessmeister-board <b>static</b>>
         &lt;img is=white-king <b>at=E6</b> />
         &lt;img is=white-rook <b>at=H8</b> />
         &lt;img is=black-king <b>at=E8</b> />
-    &lt;/chessly-board>
+    &lt;/chessmeister-board>
                     </pre>
             </div>
             <div>
-                <chessly-board static>
+                <chessmeister-board static>
                     <img is=white-king at=E6>
                     <img is=white-rook at=H8>
                     <img is=black-king at=E8>
-                </chessly-board>
+                </chessmeister-board>
             </div>
         </div>
 
         <h2>Configuration and JavaScript code examples:</h2>
         <h3>style using CSS variables (showing default values)</h3>
         <pre>
-    chessly-board {
-        --chessly-squarelabel-color: black;// transparent sets squarelabels not visible
-        --chessly-attack-color: darkred;
-        --chessly-defend-color: darkgreen;
-        --chessly-undefended-color: red;
-        --chessly-squarewhite-color: #f0e9c5;
-        --chessly-squareblack-color: #b58863;
-        --chessly-allowed-destinations: .5vh solid orange;
-        --chessly-piece-destinations: .5vh dashed green;
+    chessmeister-board {
+        --chessmeister-squarelabel-color: black;// transparent sets squarelabels not visible
+        --chessmeister-attack-color: darkred;
+        --chessmeister-defend-color: darkgreen;
+        --chessmeister-undefended-color: red;
+        --chessmeister-squarewhite-color: #f0e9c5;
+        --chessmeister-squareblack-color: #b58863;
+        --chessmeister-allowed-destinations: .5vh solid orange;
+        --chessmeister-piece-destinations: .5vh dashed green;
     }
             </pre>
         <h3>JavaScript </h3>
         <pre>
-    let board = document.querySelector('chessly-board');
+    let board = document.querySelector('chessmeister-board');
     console.log( board.fen );      // gets current board fen
     board.fen = "8/8/8/8/8/8/8/8"; // sets board fen (blank board)
     board.piece("F3");             // gets IMG element at F3 or False
@@ -309,7 +309,7 @@
             For usage see this page source code
         </p>
         <pre>
-    board.addEventListener('chessly-event', event => {
+    board.addEventListener('chessmeister-event', event => {
         let { name, type, square, move } = event.detail;
         // name = string name for event: dragged, click
         // type = "square"
@@ -351,7 +351,7 @@
             }
 
             [current],
-            chessly-board:hover {
+            chessmeister-board:hover {
                 border-color: green;
             }
 
@@ -374,29 +374,30 @@
         <div class=grid3column>
             <div id=Kasparov><img loading="lazy"
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Garry_Kasparov%2C_New_York_City%2C_2003.jpg/141px-Garry_Kasparov%2C_New_York_City%2C_2003.jpg">
-                <chessly-board static id=Game0 fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1"
+                <chessmeister-board static id=Game0 fen="4r3/8/2p2PPk/1p6/pP2p1R1/P1B5/2P2K2/3r4 w" title="Game 1997 #1"
                     move="PG7" hint="Pawn at G6">
-                </chessly-board>
-                <chessly-board static id=Game2 fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b" title="Game 1997 #3"
+                </chessmeister-board>
+                <chessmeister-board static id=Game2 fen="3r3k/2r2p2/R4Pbp/1Bp1p3/2P1P2K/3P1R2/8/8 b"
+                    title="Game 1997 #3" result="draw">
+                </chessmeister-board>
+                <chessmeister-board static id=Game4 fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5"
                     result="draw">
-                </chessly-board>
-                <chessly-board static id=Game4 fen="8/pp4P1/8/8/1kp2N2/1n2R1P1/3r4/1K6 w" title="Game 1997 #5"
-                    result="draw">
-                </chessly-board>
+                </chessmeister-board>
             </div>
             <div>
-                <chessly-board id=ChessChallenge> </chessly-board> <!-- -->
+                <chessmeister-board id=ChessChallenge> </chessmeister-board> <!-- -->
             </div>
             <div id=DeepBlue><img loading="lazy"
                     src="https://upload.wikimedia.org/wikipedia/commons/b/be/Deep_Blue.jpg">
-                <chessly-board static id=Game1 fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w"
+                <chessmeister-board static id=Game1 fen="Rr6/5kp1/1qQb1p1p/1p1PpP2/1Pp1B3/2P4P/6P1/5K2 w"
                     title="Game 1997 #2" move="RA6" hint="Attack the black queen">
-                </chessly-board>
-                <chessly-board static id=Game3 fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4" result="draw">
-                </chessly-board>
-                <chessly-board static id=Game5 fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w"
+                </chessmeister-board>
+                <chessmeister-board static id=Game3 fen="8/2R1P3/8/2pp4/P3r3/1k6/8/2K5 b" title="Game 1997 #4"
+                    result="draw">
+                </chessmeister-board>
+                <chessmeister-board static id=Game5 fen="r1k4r/p2nb1p1/2b4p/1p1n1p2/3P4/3Q1NB1/1PP2PPP/R5K1 w"
                     title="Game 1997 #6" move="PC4" hint="Attack a black knight">
-                </chessly-board>
+                </chessmeister-board>
             </div>
         </div>
     </section>
@@ -437,7 +438,7 @@
                 <img is=white-pawn draggable="draggable">
             </div>
             <div>
-                <chessly-board id=ChessDesign> </chessly-board> <!-- -->
+                <chessmeister-board id=ChessDesign> </chessmeister-board> <!-- -->
                 <a href="https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation">FEN:</a> <b><span
                         id=FENdesign></span></b>
             </div>
@@ -460,7 +461,7 @@
         let challengeboard = false;
         let designpiece = false;
         let savedfen;
-        let gameboards = _ => document.querySelectorAll('chessly-board[title*="Game"]');
+        let gameboards = _ => document.querySelectorAll('chessmeister-board[title*="Game"]');
         let piecebuttons = _ => document.querySelectorAll('#DesignChessboard img');
         var urlParams = new URLSearchParams(window.location.search);
         savedfen = localStorage.getItem(___FEN___) || urlParams.get(___FEN___);
@@ -470,7 +471,7 @@
             ChessChallenge.fen = challengeboard.fen;
             challengeboard.setAttribute("current", "true");
             Hint.setAttribute("hint", challengeboard.getAttribute("hint"));
-            console.log('chessly demo page loaded');
+            console.log('chessmeister demo page loaded');
 
             [...Links].map(link => link.innerHTML = Links[0].innerHTML);
 
@@ -511,7 +512,7 @@
                     savedfen = false;
                 }
             });
-            ChessChallenge.addEventListener('chessly-event', event => {
+            ChessChallenge.addEventListener('chessmeister-event', event => {
                 let { name, type, square, move } = event.detail;
                 if (
                     challengeboard
@@ -521,7 +522,7 @@
                     challengeboard.setAttribute("result", "win");
                 };
             });
-            ChessDesign.addEventListener('chessly-event', event => {
+            ChessDesign.addEventListener('chessmeister-event', event => {
                 let { name, type, square, move } = event.detail;
                 if (name == "click") {
                     if (type == "square" && designpiece) {
@@ -543,8 +544,8 @@
             document.body.style.visibility = 'initial';
 
             //play chess on demo board
-            //ChesslyDemo.start(urlParams.get(___FEN___) || false);
-            function playChess(board = ChesslyDemo) {
+            //ChessMeisterDemo.start(urlParams.get(___FEN___) || false);
+            function playChess(board = ChessMeisterDemo) {
                 let chess = new Chess();
                 let ChesslyDemo_playing = setInterval(() => {
                     if (chess.game_over()) {
@@ -564,4 +565,4 @@
 </body>
 
 </html>
-Published: 2019-10-09 15:35 
+Published: 2019-10-09 15:48 
