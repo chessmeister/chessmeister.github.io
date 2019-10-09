@@ -1,8 +1,8 @@
-# CheSSly.js - using W3C standard Custom Elements
+# elements.chessmeister.js - using W3C standard Custom Elements
 
 ## A single 9 KB GZipped file creates chess pieces and board
 
-## Demo & Documentation: https://chessly.github.io
+## Demo & Documentation: https://chessmeister.github.io
 
 ![](https://i.imgur.com/AZmMjfC.jpg)
 
@@ -42,4 +42,4 @@ https://choosealicense.com/licenses/unlicense/
 * Or go bigger... 500 KB React version : https://chessboardjsx.com/
 
 * Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-10-09 15:35 
+Published: 2019-10-09 15:48 
