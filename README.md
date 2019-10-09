@@ -8,7 +8,7 @@
 
 # DISCLAIMER
 
-This project is NOT about Chess! 
+**This project is NOT about Chess!**
 
 The topic of Chess was chosen for educational purposes to demonstrate W3C Standard Custom Elements, CSS Grid and Native JavaScript DOM performance
 
@@ -41,5 +41,4 @@ https://choosealicense.com/licenses/unlicense/
 
 * Or go bigger... 500 KB React version : https://chessboardjsx.com/
 
-* Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-10-09 15:52 
+Published: 2019-10-09 15:58 
