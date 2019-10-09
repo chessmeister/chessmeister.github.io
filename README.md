@@ -42,4 +42,4 @@ https://choosealicense.com/licenses/unlicense/
 * Or go bigger... 500 KB React version : https://chessboardjsx.com/
 
 * Created by the maker of https://card-ts.github.io/playingcardts
-Published: 2019-10-09 15:51 
+Published: 2019-10-09 15:52 
