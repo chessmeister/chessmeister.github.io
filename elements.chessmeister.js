@@ -950,7 +950,7 @@ let game_css =
     position:relative;
     text-align:center;
     top:40%;
-    color:var(--${ChesslyNameSpace}-squarelabel-color,black);
+    color:var(--${ChesslyNameSpace}-squarelabel-color,#444);
     font-family:arial;
   }` +
 
@@ -1270,24 +1270,29 @@ customElements.define(
           piece._show_piece_moves(from_square, [this.layerMoves]);
         });
         this.layerSquares.set_square_relations();//loop all squares updating this.board.layerSquares with correct attribute data
-        history.pushState({}, "", "?fen=" + encodeURI(this.fen));
+        if (document.location.href.includes('fen')) history.pushState({}, "", "?fen=" + encodeURI(this.fen));
       }
     }
     setfen(fen) {
       delete this._initfen;
       this.layerPieces.clear_layer();
       fen.split("/").map((rank, idx) => {
-        rank.split``.map(
-          fen => fen == Number(fen)         // number
-            ? ___EMPTYSQUARE___.repeat(fen) // then add number empty squares
-            : fen                           // else fen character
-        ).join``.split``.map((fen, file) => {
-          // join everything to one string (the repeat took 1 array position)
-          // and split again so we get 64 values
-          let piece_is = FEN_translation_Map.get(fen);
-          let square = files[file % ___SQUARECOUNT___] + ranks[idx % ___SQUARECOUNT___];
-          if (piece_is) this.add_board_piece(piece_is, square);
-        });
+        rank
+          .split``
+          .map(
+            fen => fen == Number(fen)         // number
+              ? ___EMPTYSQUARE___.repeat(fen) // then add number empty squares
+              : fen                           // else fen character
+          )
+          .join``
+          .split``
+          .map((fen, file) => {
+            // join everything to one string (the repeat took 1 array position)
+            // and split again so we get 64 values
+            let piece_is = FEN_translation_Map.get(fen);
+            let square = files[file % ___SQUARECOUNT___] + ranks[idx % ___SQUARECOUNT___];
+            if (piece_is) this.add_board_piece(piece_is, square);
+          });
       });
       //once the pieces are on the board, calc underlying layers
       this.layerSquares.layerHTML();
