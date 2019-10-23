@@ -904,7 +904,7 @@ let game_css =
     position:relative;
     /* border:var(--border, 1vh solid black); */
     width:100%;
-    max-width:90vh;
+    max-width:70vh;
     margin:0 auto;
   }` + css_F12friendly_linebreak +
 
