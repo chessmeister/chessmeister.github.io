@@ -166,7 +166,7 @@
     <h3>Demonstrating W3C standard Custom Elements and CSS4.<br>Chesspiece positions just happened to be a great
         paradigm
     </h3>
-    <p id=Links>
+    <p class="Links">
         <a href="#ChessMeister">ChessMeister</a>
         -
         <a href="#documentation">Documentation</a>
@@ -176,9 +176,6 @@
         <a href="#design">Design</a>
         -
         <a href="https://github.com/chessmeister/chessmeister.github.io">GitHub</a>
-        -
-        By the same maker: <a href="https://flagmeister.github.io">FlagMeister</a> and <a
-            href="https://card-ts.github.io/playingcardts/">CardMeister</a>
     </p>
 
 
@@ -202,7 +199,7 @@
 
     <section id="Documentation">
         <a name=documentation></a>
-        <p id=Links> </p>
+        <p class="Links"> </p>
         <h2>elements.chessmeister.js - Custom Element documentation</h2>
         <pre class="htmlcode">
     &lt;head>
@@ -233,7 +230,8 @@
         </div>
         <p>
             For more information on SVG and Custom Elements see: <a
-                href="https://card-ts.github.io/playingcardts/">https://card-ts.github.io/playingcardts/</a>
+                href="https://github.com/cardmeister/cardmeister.github.io">CardMeister: 52 SVG playingcards in one
+                Custom Element</a>
         </p>
         <h3>Autonomous Custom Element</h3>
         <p>
@@ -324,7 +322,7 @@
     </section>
     <section id="Chess Challenge">
         <a name=challenges></a>
-        <p id=Links> </p>
+        <p class="Links"> </p>
         <style>
             [result]::after {
                 font-size: 300%;
@@ -406,7 +404,7 @@
     </section>
     <section id="DesignChessboard">
         <a name=design></a>
-        <p id=Links> </p>
+        <p class="Links"> </p>
         <style>
             #DesignChessboard img {
                 /* width: 100%;
@@ -456,7 +454,7 @@
         </div>
     </section>
 
-    <p id=Links>
+    <p class="Links">
     </p>
 
     <script>
@@ -476,7 +474,8 @@
             Hint.setAttribute("hint", challengeboard.getAttribute("hint"));
             console.log('chessmeister demo page loaded');
 
-            [...Links].map(link => link.innerHTML = Links[0].innerHTML);
+            let links = [...document.querySelectorAll('.Links')];
+            links.map(link => link.innerHTML = links[0].innerHTML);
 
             ChessDesign.addEventListener("dragend", event => {
                 console.warn("draggend on Custom Element", this);
@@ -568,4 +567,4 @@
 </body>
 
 </html>
-Published: 2019-11-09 18:59 
+Published: 2020-02-28 13:27 
