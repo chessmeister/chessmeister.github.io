@@ -33,24 +33,22 @@ const ChesslyBoardSquareBlack = ChesslySquareNameSpace + "black";
 let isOdd = x => (x === 0 ? false : (x & -x) === 1); // isOdd returns T/F for negative and possible values
 
 /**
- * chunck a string in equal sizes
+ * chunck an Array in equal sizes
  * @param {array} arr - input array 
  * @param {number} size
  */
-let chunk = (
-  arr, // input Array
-  size, // chunk size
+let chunkArray = (
+  arr, // input & processing Array
+  size = 1, // chunk size
+  //catch invalid sizes
+  chunksize = size < 1 ? 1 : size,
   //declare helper array
-  result = [] // result: initialized on first call, set in recursion call
-) => (
-    result.push(arr.splice(0, size))  // push first size chunk
-    ,
-    result.concat(                    // process remaining chunk
-      arr.length
-        ? chunk(arr, size)
-        : []                          // concat needs an argument , [] is concatted last!
-    )
-  );
+  chunks = [arr.splice(0, chunksize)] // result: initialized on first call, add first chunk
+) => chunks.concat(                    // process remaining chunk
+  arr.length
+    ? chunkArray(arr, chunksize)
+    : []                          // concat needs an argument , [] is concatted last!
+);
 
 /**
  * extend Array to store board destinations for every chess piece 
@@ -62,14 +60,14 @@ class ChessPieceDestinations extends Array {
     super();
     this.board = board;
   }
-  _filter(char = ___SQUARE_ATTACK_MARKER___) {
+  ___filter(char = ___SQUARE_ATTACK_MARKER___) {
     return this.filter(location => location.length > 2 && location[2] === char)
   }
   get attacks() {// get X marked locations
-    return this._filter(___SQUARE_ATTACK_MARKER___);
+    return this.___filter(___SQUARE_ATTACK_MARKER___);
   }
   get defends() {// get Z marked locations
-    return this._filter(___SQUARE_DEFEND_MARKER___);
+    return this.___filter(___SQUARE_DEFEND_MARKER___);
   }
   get pieces() {// gets all pieces in current piece destination square
     return this.map(square => this.board.piece(squarenameUpperCase(square)));
@@ -232,6 +230,14 @@ do {
 let ranksAscending = [...ranks].reverse(); // 1 to N
 let all_board_squares = ranks.map(rank => files.map(file => file + rank)).flat();  // 'A8'.. 'H1'
 
+let CSS_gridareas = () => {
+  //patch/rewrite for generating Svelte CSS
+  gridareas = all_board_squares.map(square => {
+    let squarecolor = [___WHITE___, ___BLACK___][~~(isOdd("ABCDEFGH".indexOf(square[0])) ^ isOdd(square[1]))];
+    return `[${___AT___}="${square}"]{ grid-area:${square};--squarecolor:"${squarecolor}"}`
+  }).join(css_F12friendly_linebreak);
+  return gridareas;
+}
 /**
  * make sure notation is always 2 characters UPPERcase: A1
  * @param {array} square
@@ -446,7 +452,7 @@ function SVG_chesspiece({
           attack_from_square,
           layers = [this.board.layerDestinations]//for now second param is always set
         ) {
-          this.calculate_piece_moves().piece_destinations// array [...,"B5","","A6X",...] with piece destinations and attack X info
+          this.calculate_piece_moves()// array [...,"B5","","A6X",...] with piece destinations and attack X info
             .filter(to_square => to_square.length == 2 || to_square[2] == ___SQUARE_ATTACK_MARKER___)// empty or attacking square
             .map(to_square => {
               if (attack_from_square == this.at) {
@@ -771,6 +777,7 @@ function SVG_chesspiece({
 
           if (this.board.id == "ChessMeisterDemo" && FEN_translation_Map.get(this.is) == "k") console.warn(this.at, this.is, this.destinations);
 
+          return this.destinations;
           return {
             piece_destinations: this.destinations
             //inbetweenPieces
@@ -889,8 +896,13 @@ let cssgrid = gap =>
   grid-gap:${gap};
   grid-template-columns:${gridrepeat(gap)};
   grid-template-rows:${gridrepeat(gap)};` + css_F12friendly_linebreak +
-  `  grid-template-areas: ${css_F12friendly_linebreak + ' "' + chunk([...all_board_squares], ___SQUARECOUNT___).join('"' + css_F12friendly_linebreak + ' "').replace(/,/g, " ") + '"' + css_F12friendly_linebreak};` + css_F12friendly_linebreak +
-  `  grid-auto-flow:row`;
+  ` grid-template-areas: ${css_F12friendly_linebreak
+  + ' "'
+  + chunkArray([...all_board_squares], ___SQUARECOUNT___)
+    .join('"' + css_F12friendly_linebreak + ' "')
+    .replace(/,/g, " ")
+  + '"' + css_F12friendly_linebreak};` + css_F12friendly_linebreak +
+  ` grid-auto-flow:row`;
 
 let game_css =
   `<style>:root {
@@ -930,7 +942,7 @@ let game_css =
   }` + css_F12friendly_linebreak +
 
   //create grid-area for every square name (A1 to H8)
-  `${all_board_squares.map(square => `[${___AT___}="${square}"]{ grid-area:${square} }`).join(css_F12friendly_linebreak)}` + css_F12friendly_linebreak +
+  `${CSS_gridareas()}` + css_F12friendly_linebreak +
 
   `${ChesslyBoardLayer}{
     ${cssgrid(0)};
@@ -1172,6 +1184,13 @@ customElements.define(
       this._initfen = false;
     }
 
+    get files() {
+      return files;
+    }
+
+    get ranks() {
+      return ranks;
+    }
     make_board_interactive(interactive = true) {
       this.is_interactive = interactive;
       window.bb = this;
@@ -1325,10 +1344,41 @@ customElements.define(
     game(nr) {
       this.fen = games[nr].fen;
     }
+
+    /**
+     * translate current cell to other location:
+     * ( 'D5' , 1 , -1 ) returns E4
+     * @param {string} sq
+     * @param {number} hf - horizontal file displacement
+     * @param {number} vr - vertical rank displacement
+     */
+    translateSquare(
+      sq, // square: 'D5'
+      hf, // horizontal/file translate: -1 0 1
+      vr, // vertical/rank translate: -1 0 1
+      //! parameters below are declarations, not used as parameter
+      val = (
+        // function!! *!*
+        a, // files OR ranks array
+        v, // current file/rank value
+        t, // translate: -1 or 0 or 1
+        n = a.indexOf(v) + t // new index in files/ranks array *!*
+      ) =>
+        n > -1 &&
+        n < ___SQUARECOUNT___ && // new index is on board
+        a[n], // return false or new rank/file
+
+      file = val(files, sq[0], hf), // new file from square translate
+      rank = val(ranksAscending, sq[1], vr) // new rank from square translate
+    ) {
+      return file && rank && file + rank; // if valid file/rank then return 'D6'
+    }
+
+
     moves(square) {
       let piece = this.layerPieces.squares(square);
       if (piece)
-        return piece.calculate_piece_moves().piece_destinations;
+        return piece.calculate_piece_moves();
       else
         return [];
     }
