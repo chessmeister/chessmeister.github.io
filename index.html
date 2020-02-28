@@ -162,9 +162,10 @@
 
 <body class="greencloth">
     <a name="ChessMeister"></a>
-    <h1>ChessMeister (beta) - Positioning Chesspieces</h1>
-    <h3>Demonstrating W3C standard Custom Elements and CSS4.<br>Chesspiece positions just happened to be a great
-        paradigm
+    <h1>ChessMeister (Proof of Concept!) - Positioning Chesspieces</h1>
+    <h3>Demonstrating the power of using W3C standard Web Components and CSS4 over ReactJS.
+        <br>Chesspiece positions just happened to be a great paradigm
+        <br>This is a Proof of Concept! not all Chess logic is implemented!
     </h3>
     <p class="Links">
         <a href="#ChessMeister">ChessMeister</a>
@@ -430,7 +431,7 @@
         </div>
         <div class=grid3column>
             <div class=pieces>
-                <!-- draggable is a work in progress -->
+                <!-- draggable only triggers dragend events on parent elements -->
                 <img is=white-king draggable="draggable">
                 <img is=white-queen draggable="draggable">
                 <img is=white-bishop draggable="draggable">
@@ -439,7 +440,7 @@
                 <img is=white-pawn draggable="draggable">
             </div>
             <div>
-                <chessmeister-board id=ChessDesign> </chessmeister-board> <!-- -->
+                <chessmeister-board id=ChessDesign fen="8/8/2Q5/4k3/8/8/8/8"></chessmeister-board>
                 <a href="https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation">FEN:</a> <b><span
                         id=FENdesign></span></b>
             </div>
@@ -476,10 +477,6 @@
 
             let links = [...document.querySelectorAll('.Links')];
             links.map(link => link.innerHTML = links[0].innerHTML);
-
-            ChessDesign.addEventListener("dragend", event => {
-                console.warn("draggend on Custom Element", this);
-            });
 
             [...piecebuttons()].map(img => {
                 img.onclick = _ => {
@@ -567,4 +564,4 @@
 </body>
 
 </html>
-Published: 2020-02-28 13:27 
+Published: 2020-02-28 16:26 
