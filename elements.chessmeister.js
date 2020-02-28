@@ -136,6 +136,7 @@ let end_drag = event => {
   let piece = board.piece(event.target.at);    // pieces at square
 
   if (board && board.draggingFromsquare) {//dragging piece in same board
+    console.log('%c Dragged piece in same board/shadowDOM', 'background:lightgreen;color:black');
     board.dispatch('dragged', {
       piece,
       is: piece.is,
@@ -154,7 +155,7 @@ let end_drag = event => {
     clear_drag(event);                        // clear destinations
   } else {
     // dragging something from outside board
-    console.warn("end dragging", event.target);
+    console.warn("end dragging", event);
 
   }
 }
@@ -775,7 +776,7 @@ function SVG_chesspiece({
             )
           );// this.destinations ChessPieceDestinations Array
 
-          if (this.board.id == "ChessMeisterDemo" && FEN_translation_Map.get(this.is) == "k") console.warn(this.at, this.is, this.destinations);
+          //if (this.board.id == "ChessMeisterDemo" && FEN_translation_Map.get(this.is) == "k") console.warn(this.at, this.is, this.destinations);
 
           return this.destinations;
           return {
@@ -798,6 +799,8 @@ class SquareElement extends HTMLElement {
   connectedCallback() {
     this.board = this.getRootNode().host;
     this.reset_square();
+
+    let $this = this;
   }
   set square(square) {
     this._square = square;
@@ -878,6 +881,10 @@ class SquareElement extends HTMLElement {
   }
   set set_defended_By(piece) {
     this._relations[___DEFENDED_BY___].add(piece);
+  }
+
+  set piece(piece_is) {
+    this.board.add_board_piece(piece_is, this._square);
   }
   get piece() {
     return this.board.piece(this._square);
@@ -1193,7 +1200,6 @@ customElements.define(
     }
     make_board_interactive(interactive = true) {
       this.is_interactive = interactive;
-      window.bb = this;
 
       this.shadowRoot.querySelector('[id="css_interactive_board"]').disabled = !interactive;
 
@@ -1202,7 +1208,23 @@ customElements.define(
 
       //listeners on #board child div
       this.board.addEventListener("dragenter", this._showdraggingpiece);
+
+      // dragend does only fire for childelements being dragged, elements from outside the current tree do not trigger  a dragend here!
       this.board.addEventListener("dragend", end_drag);
+
+      if (this.id === "ChessDesign") {
+        console.warn('DEV code on', this.shadowRoot.getRootNode().host, this);
+        let log = (evt, label, color = 'orange') => {
+          let square = this.shadowRoot.elementFromPoint(evt.x, evt.y).square;
+          console.log(`%c Board ${evt.type} ${label}`, `background:${color}`, square, evt.target.is);
+        }
+        //this.board.addEventListener("dragenter", evt => log(evt, 'board.dragenter', 'lightcoral'));
+        document.addEventListener("dragend", evt => {
+          let square = this.shadowRoot.elementFromPoint(evt.x, evt.y).square;
+          log(evt, '@document', 'green;color:white')
+          this.add_board_piece(evt.target.is, square);
+        });
+      }
     }
 
     _showdraggingpiece(event) {
