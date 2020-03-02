@@ -1226,7 +1226,6 @@ customElements.define(
         });
       }
     }
-
     _showdraggingpiece(event) {
       let piece = event.target;
       let { board, at: square } = piece;
