@@ -41,4 +41,4 @@ https://choosealicense.com/licenses/unlicense/
 
 * Or go bigger... 500 KB React version : https://chessboardjsx.com/
 
-Published: 2020-03-02 11:56 
+Published: 2020-03-02 11:59 
